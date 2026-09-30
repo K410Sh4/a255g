@@ -20,7 +20,7 @@ Implementado:
 - cópia automática do inventário completo para a área de transferência ao abrir/atualizar;
 - snapshot completo também salvo no armazenamento interno privado do app;
 - compartilhamento de relatório de capacidades;
-- CI para build + testes + lint + APK.
+- CI para build debug/release, testes unitários, lint, compilação dos testes Android, execução smoke em emulador Android 16 e APKs.
 
 ## Princípio do projeto
 
@@ -40,7 +40,7 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 ## Permissões
 
 - `ACCESS_FINE_LOCATION`: callbacks GNSS e medições brutas.
-- `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT`: descoberta BLE moderna.
+- `BLUETOOTH_SCAN`: descoberta BLE passiva. O app não solicita `BLUETOOTH_CONNECT` e não tenta conectar aos dispositivos encontrados.
 - `RECORD_AUDIO`: Audio Lab local.
 - `NFC`: leitura de tags em primeiro plano.
 - `ACCESS_NETWORK_STATE`: leitura das capacidades da rede ativa.
@@ -49,10 +49,10 @@ O probe Camera2 consulta apenas características e, por isso, não pede permiss�
 
 ## Build local
 
-Requer JDK 17, Android SDK 36, Build Tools 36.0.0 e Gradle 9.6.0.
+Requer JDK 17, Android SDK 36 e Build Tools 36.0.0. O repositório inclui o Gradle Wrapper 9.6.0 com checksum da distribuição fixado.
 
 ```bash
-gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
 APK:
@@ -82,7 +82,7 @@ Na inicialização e sempre que **Atualizar + copiar** é usado, o app:
 1. coleta o snapshot do dispositivo, build, SoC/ABI, RAM/storage, tela, bateria/térmico, rede, NFC, sensores, Camera2 e `PackageManager.systemAvailableFeatures`;
 2. gera um relatório textual completo;
 3. copia o relatório para a área de transferência;
-4. salva uma cópia privada em `filesDir/a25lab_last_internal_specs.txt`.
+4. salva uma cópia privada em `noBackupFilesDir/a25lab_last_internal_specs.txt`, fora do backup/transferência do Android.
 
 Por privacidade, o inventário não coleta IMEI, número de telefone, Android ID, contas, contatos, histórico de localização ou conteúdo pessoal.
 
@@ -169,3 +169,10 @@ Principais correções:
 - CI também monta o release minificado para exercitar R8.
 
 Pontos dependentes do SM-A256E continuam marcados como validação física, não como comportamento confirmado.
+
+
+## Build reproduzível
+
+O projeto inclui `gradlew`, `gradlew.bat`, `gradle-wrapper.jar` oficial e `gradle-wrapper.properties` fixado no Gradle 9.6.0. A distribuição `gradle-9.6.0-bin.zip` possui SHA-256 pinado no wrapper, e a CI usa `gradle/actions/setup-gradle` com validação automática do JAR antes de executar qualquer build.
+
+Isso evita depender de uma instalação global de Gradle diferente entre máquinas.
