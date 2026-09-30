@@ -153,3 +153,11 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 92. **BLE não tratava toda falha de runtime ao iniciar/parar scan** — além de revogação de permissão, estados inesperados do adaptador agora viram diagnóstico seguro; nomes vazios de anúncio recebem fallback legível.
 93. **UID NFC vazio aparecia como campo em branco** — identificadores vazios agora são tratados como ausentes.
 94. **Lookup NFC ainda usava API estática antiga** — Activity e ViewModel passaram a obter o adaptador por `NfcManager`, reduzindo dependência de API de lookup depreciada.
+
+
+95. **Estado NFC podia ficar desatualizado com Quick Settings** — ligar/desligar NFC sem pausar a Activity não garantia novo `onResume`. A Activity agora observa `ACTION_ADAPTER_STATE_CHANGED`, atualiza a UI e sincroniza Reader Mode em tempo real.
+96. **Scan BLE podia ficar marcado como ativo após desligar o Bluetooth** — o repositório agora observa `BluetoothAdapter.ACTION_STATE_CHANGED`, encerra scan/maintenance, publica erro legível e limpa referências internas da sessão.
+97. **Separadores Unicode U+2028/U+2029 escapavam da sanitização** — ambos passam a ser neutralizados como controles de layout, com regressão unitária.
+98. **NDEF grande era decodificado integralmente antes do limite visual** — o parser limita a janela de decodificação a 16 KiB, preserva limite visual de 4096 caracteres e indica truncamento.
+99. **Decoder NDEF não tinha cobertura unitária direta** — foram adicionados testes para Text RTD UTF-8, payload malformado, controles bidi e truncamento.
+100. **Artefatos de CI não carregavam checksum dentro do pacote** — a pipeline agora gera `SHA256SUMS.txt` para APK debug e release unsigned e publica junto dos artefatos.
