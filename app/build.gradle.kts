@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.k410sh4.a25lab"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.k410sh4.a25lab"
         minSdk = 31
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 6
         versionName = "0.5.1"
 
@@ -45,6 +45,10 @@ android {
     lint {
         warningsAsErrors = true
         checkReleaseBuilds = true
+        // API 37 is listed by lint metadata but is not available from the
+        // stable sdkmanager channel used by CI yet. Keep target 36 until the
+        // stable platform package is installable and tested.
+        disable += "OldTargetApi"
     }
 }
 
