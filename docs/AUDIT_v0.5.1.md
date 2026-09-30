@@ -117,3 +117,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 69. **Leitura NFC compartilhava executor com inventário/persistência** — uma operação de tag lenta podia atrasar refresh do hardware e escrita do snapshot. NFC agora possui executor dedicado e lifecycle próprio.
 70. **Instrumentation era apenas compilada, não executada** — a CI ganhou um job separado em emulador Android 16/API 36 que executa `connectedDebugAndroidTest` após build/unit/lint. A action do emulador também está fixada em commit imutável.
+
+
+71. **Build dependia de Gradle global** — o repositório não possuía Wrapper, então ambiente local e CI podiam usar distribuições diferentes. Foram adicionados os arquivos oficiais do Gradle Wrapper 9.6.0, incluindo JAR versionado, scripts POSIX/Windows e `distributionSha256Sum` da distribuição binária.
+72. **CI ainda ignorava o Wrapper recém-adicionado** — build, lint, unit tests e instrumentation agora chamam `./gradlew`; `setup-gradle` permanece apenas para cache/diagnóstico e valida automaticamente o JAR oficial.
+73. **Documentação operacional estava defasada** — README ainda citava `BLUETOOTH_CONNECT`, `filesDir` e instalação global de Gradle. A documentação foi alinhada ao manifesto, `noBackupFilesDir`, Wrapper e smoke tests Android 16.
