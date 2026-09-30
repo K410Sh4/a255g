@@ -36,6 +36,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        // Privacy and battery invariant: live radios/sensors never keep running
+        // merely because the Activity moved to the background.
+        viewModel.stopLiveModules()
         nfcAdapter?.disableReaderMode(this)
         super.onPause()
     }
