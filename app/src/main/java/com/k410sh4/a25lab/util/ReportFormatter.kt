@@ -97,6 +97,9 @@ object ReportFormatter {
             appendLine("Transportes: ${network.transports.joinToString().ifBlank { "N/D" }}")
             appendLine("Downstream declarado: ${network.downstreamKbps} kbps")
             appendLine("Upstream declarado: ${network.upstreamKbps} kbps")
+            network.lastError?.let { error ->
+                appendLine("Erro de leitura: ${safeLine(error)}")
+            }
             appendLine()
 
             appendLine("[SENSORES — ${sensors.size}]")
