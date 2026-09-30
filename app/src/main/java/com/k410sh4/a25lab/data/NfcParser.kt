@@ -52,7 +52,7 @@ object NfcParser {
         return NfcState(
             available = available,
             enabled = enabled,
-            lastTagIdHex = idHex,
+            lastTagIdHex = idHex.ifBlank { null },
             technologies = techs,
             ndefText = ndefText,
             lastError = ndefError,
