@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.5.0
+## Estado atual — v0.5.1
 
 Implementado:
 
@@ -142,3 +142,30 @@ O novo PhonePose3D:
 MagneticField3D passou a usar uma esfera/grade visual, eixos e vetor do campo com intensidade relativa.
 
 A UI mantém limite de publicação de estado em aproximadamente 20 Hz para evitar recomposição excessiva.
+
+
+## Hardening e auditoria — v0.5.1
+
+A v0.5.1 é uma rodada de correção antes de adicionar novos recursos.
+
+Principais correções:
+
+- streams de sensores voltam corretamente após background/resume;
+- NFC Reader Mode só fica ativo dentro da tela NFC;
+- inventário estático e escrita do snapshot saíram do hot path da UI;
+- cópia automática para o clipboard é adiada se o app estiver em background;
+- aceleração usa `TYPE_LINEAR_ACCELERATION` quando disponível e identifica o fallback;
+- quaternion começa no primeiro sample real e usa suavização dependente do tempo;
+- magnetômetro expõe qualidade/calibração em vez de tratar toda leitura como igualmente confiável;
+- `light_cct` exibe o vetor vendor bruto sem presumir qual índice representa CCT;
+- áudio ganhou proteção contra stop/start concorrente, leitura parcial e falsos picos em silêncio/DC;
+- FFT de produção reutiliza buffers;
+- BLE usa apenas a permissão necessária para scan, não coleta endereço, limita memória e expira dispositivos antigos;
+- rede diferencia rede ativa, capacidade de Internet, validação real e portal cativo;
+- falha de um Camera2 ID não apaga as outras câmeras do inventário;
+- benchmark CPU usa warm-up e mediana;
+- código legado da UI anterior foi removido;
+- backup/transferência de dados privados foram explicitamente bloqueados;
+- CI também monta o release minificado para exercitar R8.
+
+Pontos dependentes do SM-A256E continuam marcados como validação física, não como comportamento confirmado.

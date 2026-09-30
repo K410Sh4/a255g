@@ -97,3 +97,29 @@ SensorRepository usa SensorManager.getQuaternionFromVector para obter a orienta�
 QuaternionMath concentra normalização, conjugação, multiplicação, rotação de vértices, orientação relativa e interpolação normalizada. Essas operações são cobertas por testes unitários.
 
 O render PhonePose3D usa um quaternion relativo a uma referência recenterizável. Isso reduz gimbal lock e evita a ordem Euler arbitrária usada na v0.4.
+
+
+## Hardening de lifecycle e concorrência (v0.5.1)
+
+`AppViewModel` diferencia suspensão de background de parada intencional do usuário. Sensores ligados à tela são restaurados ao voltar ao foreground; GNSS, BLE e áudio só são retomados se o usuário os havia iniciado.
+
+`MainActivity` mantém NFC Reader Mode restrito à tela NFC. O inventário estático roda fora da thread principal e o clipboard não é alterado automaticamente enquanto o app estiver em background.
+
+`AudioAnalyzer` usa geração de sessão para invalidar loops antigos após stop/start. A leitura preenche frames completos antes da FFT, e a implementação `FftAnalyzer` reutiliza buffers e remove componente DC.
+
+`BleRepository` mantém limite de dispositivos, expiração por tempo e publicação limitada para UI. O scan não depende de `BLUETOOTH_CONNECT` e o app não coleta endereço dos dispositivos observados.
+
+`GnssRepository` usa `GnssCapabilities` para suporte a medições e observa o modo de localização do Android; não depende do callback de status de measurements legado.
+
+`CameraProbe` isola falhas por ID e preserva resultados válidos.
+
+## Limites de validação
+
+Continuam exigindo aparelho físico:
+
+- alinhamento perceptivo dos eixos do modelo 3D;
+- semântica dos valores do sensor vendor `light_cct`;
+- taxa efetiva/jitter de AOIS e VDIS;
+- campos efetivamente preenchidos em `GnssMeasurement`;
+- processamento real aplicado à fonte de áudio solicitada como `UNPROCESSED`;
+- consumo, temperatura e estabilidade em sessões longas.

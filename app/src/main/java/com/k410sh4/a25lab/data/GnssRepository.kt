@@ -1,7 +1,10 @@
 package com.k410sh4.a25lab.data
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.GnssMeasurementsEvent
 import android.location.GnssStatus
@@ -13,6 +16,15 @@ class GnssRepository(private val context: Context) {
     private val manager = context.getSystemService(LocationManager::class.java)
     private var callback: ((GnssState) -> Unit)? = null
     private var state = GnssState()
+    private var locationReceiverRegistered = false
+
+    private val locationModeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == LocationManager.MODE_CHANGED_ACTION) {
+                handleLocationModeChanged()
+            }
+        }
+    }
 
     private val statusCallback = object : GnssStatus.Callback() {
         override fun onSatelliteStatusChanged(status: GnssStatus) {
@@ -44,24 +56,6 @@ class GnssRepository(private val context: Context) {
                 ),
             )
         }
-
-        override fun onStatusChanged(status: Int) {
-            when (status) {
-                STATUS_NOT_SUPPORTED -> update(
-                    state.copy(
-                        rawMeasurementsSupported = false,
-                        lastError = "Medições GNSS brutas não são suportadas neste firmware.",
-                    ),
-                )
-                STATUS_LOCATION_DISABLED -> update(
-                    state.copy(
-                        running = false,
-                        locationEnabled = false,
-                        lastError = "A localização do Android foi desativada.",
-                    ),
-                )
-            }
-        }
     }
 
     fun start(onState: (GnssState) -> Unit) {
@@ -80,6 +74,7 @@ class GnssRepository(private val context: Context) {
 
         stop()
         callback = onState
+        registerLocationModeReceiver()
 
         val locationEnabled = runCatching {
             manager.isLocationEnabled
@@ -127,11 +122,7 @@ class GnssRepository(private val context: Context) {
             }
 
             if (!statusRegistered) {
-                runCatching {
-                    manager.unregisterGnssMeasurementsCallback(
-                        measurementsCallback,
-                    )
-                }
+                unregisterGnssCallbacks()
                 update(
                     state.copy(
                         running = false,
@@ -147,6 +138,7 @@ class GnssRepository(private val context: Context) {
                 )
             }
         } catch (security: SecurityException) {
+            unregisterGnssCallbacks()
             update(
                 GnssState(
                     locationEnabled = true,
@@ -154,6 +146,7 @@ class GnssRepository(private val context: Context) {
                 ),
             )
         } catch (error: RuntimeException) {
+            unregisterGnssCallbacks()
             update(
                 GnssState(
                     locationEnabled = true,
@@ -164,15 +157,71 @@ class GnssRepository(private val context: Context) {
     }
 
     fun stop() {
-        runCatching { manager.unregisterGnssStatusCallback(statusCallback) }
-        runCatching {
-            manager.unregisterGnssMeasurementsCallback(measurementsCallback)
-        }
+        unregisterGnssCallbacks()
+        unregisterLocationModeReceiver()
 
         if (state.running) {
             update(state.copy(running = false))
         }
         callback = null
+    }
+
+    private fun registerLocationModeReceiver() {
+        if (locationReceiverRegistered) return
+
+        runCatching {
+            ContextCompat.registerReceiver(
+                context,
+                locationModeReceiver,
+                IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+            locationReceiverRegistered = true
+        }
+    }
+
+    private fun unregisterLocationModeReceiver() {
+        if (!locationReceiverRegistered) return
+
+        runCatching {
+            context.unregisterReceiver(locationModeReceiver)
+        }
+        locationReceiverRegistered = false
+    }
+
+    private fun unregisterGnssCallbacks() {
+        runCatching {
+            manager.unregisterGnssStatusCallback(statusCallback)
+        }
+        runCatching {
+            manager.unregisterGnssMeasurementsCallback(
+                measurementsCallback,
+            )
+        }
+    }
+
+    private fun handleLocationModeChanged() {
+        val enabled = runCatching {
+            manager.isLocationEnabled
+        }.getOrDefault(false)
+
+        if (!enabled) {
+            unregisterGnssCallbacks()
+            update(
+                state.copy(
+                    running = false,
+                    locationEnabled = false,
+                    lastError = "A localização do Android foi desativada.",
+                ),
+            )
+        } else if (!state.locationEnabled) {
+            update(
+                state.copy(
+                    locationEnabled = true,
+                    lastError = null,
+                ),
+            )
+        }
     }
 
     private fun update(newState: GnssState) {

@@ -61,6 +61,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var gnssRequested = false
     private var bleRequested = false
     private var audioRequested = false
+    private var pendingAutomaticReport: Pair<String, Boolean>? = null
 
     var screen by mutableStateOf(Screen.Dashboard)
         private set
@@ -118,6 +119,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onAppForeground() {
         inForeground = true
+
+        pendingAutomaticReport?.let { (text, fileSaved) ->
+            pendingAutomaticReport = null
+            copyReportToClipboardAndPublishStatus(
+                text = text,
+                fileSaved = fileSaved,
+                automatic = true,
+            )
+        }
+
         startAutomaticModulesForCurrentScreen()
 
         when (screen) {
@@ -192,12 +203,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (deviceSnapshot == null) {
                     copyStatus = "Snapshot indisponível; consulte os detalhes do laboratório."
-                } else {
+                } else if (inForeground) {
                     copyReportToClipboardAndPublishStatus(
                         text = text,
                         fileSaved = fileResult.isSuccess,
                         automatic = true,
                     )
+                } else {
+                    pendingAutomaticReport =
+                        text to fileResult.isSuccess
+                    copyStatus =
+                        "Inventário salvo; a cópia automática aguardará o retorno ao app."
                 }
             }
         }
@@ -355,6 +371,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         audioAnalyzer.close()
         ioExecutor.shutdownNow()
         computeExecutor.shutdownNow()
+        mainHandler.removeCallbacksAndMessages(null)
+        pendingAutomaticReport = null
         super.onCleared()
     }
 

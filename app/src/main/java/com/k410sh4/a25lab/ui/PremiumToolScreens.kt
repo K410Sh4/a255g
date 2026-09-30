@@ -114,7 +114,7 @@ fun PremiumGnssScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             HeroTile("Visíveis", state.satellitesVisible.toString(), Modifier.weight(1f))
-            HeroTile("No fix", state.satellitesUsed.toString(), Modifier.weight(1f))
+            HeroTile("Usados no fix", state.satellitesUsed.toString(), Modifier.weight(1f))
         }
         HeroTile(
             "Medições brutas",
@@ -166,7 +166,7 @@ fun PremiumBleScreen(
                 )
                 StartStopButtons(state.scanning, onStart, onStop)
                 state.lastError?.let { ErrorMessage(it) }
-                HintText("RSSI é uma indicação relativa; obstáculos e potência do transmissor alteram o valor.")
+                HintText("RSSI é relativo. O radar não coleta endereço Bluetooth nem tenta conectar aos dispositivos.")
             }
         }
         items(state.devices, key = { it.key }) { device ->
@@ -381,6 +381,7 @@ fun PremiumComputeScreen(
             gflops?.let { String.format(Locale.US, "%.3f GFLOP/s", it) } ?: "N/D",
         )
         CompactFact("Carga", "Matriz 160×160 FP32")
+        CompactFact("Medição", "1 aquecimento + mediana de 3 execuções")
         Button(
             onClick = onRun,
             enabled = !running,
