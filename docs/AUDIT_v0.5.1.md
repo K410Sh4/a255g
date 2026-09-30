@@ -132,3 +132,6 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 79. **Intensidade magnética zero ainda desenhava halo mínimo** — a escala visual passa a zero de verdade, evitando indicar campo não medido antes da primeira amostra.
 80. **Atualizações de dependências eram manuais** — foi adicionada configuração do Dependabot para Gradle e GitHub Actions em cadência semanal, sem auto-merge.
 81. **Privacidade BLE sem regressão estrutural** — teste unitário verifica que `BleDeviceInfo` não volte a expor um campo `address`.
+
+
+74. **Zero magnético de inicialização parecia uma leitura real** — antes do primeiro evento do magnetômetro a tela podia exibir `0 µT`, embora nenhuma amostra tivesse chegado. O estado agora possui `magneticSampleReady` e a visualização aguarda explicitamente a primeira medição.
