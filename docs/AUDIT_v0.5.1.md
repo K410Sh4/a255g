@@ -52,7 +52,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 27. **Preview de clipboard exposto** — o relatório de hardware podia aparecer em texto claro na prévia visual do clipboard do Android. A cópia agora usa o hint `android.content.extra.IS_SENSITIVE`; a compatibilidade final depende do sistema respeitar esse hint.
 28. **Dados NFC persistindo durante a sessão** — UID/tecnologias/NDEF permaneciam em memória após sair da tela NFC. Agora os dados transitórios da tag são descartados ao navegar para outra tela.
 29. **NDEF sem limite de apresentação** — payloads de texto grandes podiam causar UI desnecessariamente pesada. A apresentação é limitada a 4096 caracteres sem alterar a leitura técnica das tecnologias da tag.
-30. **Dependências e SDK defasados** — lint apontava Android API 37 e versões estáveis mais recentes de AndroidX/Compose. O projeto foi elevado para compile/target 37 e versões estáveis atuais, com warnings de lint promovidos a erro.
+30. **Dependências e SDK defasados** — lint apontou Android API 37 e AndroidX/Compose mais recentes. A atualização foi testada, mas não mantida porque o SDK 37 ainda não está disponível no canal estável usado pela CI; as versões compatíveis com API 36 permanecem pinadas e a decisão está documentada nos itens 32–34.
 31. **Instrumentation sem verificação de compilação** — a CI agora também monta o APK de testes instrumentados, garantindo que a suíte Android continue compilável mesmo antes de adicionarmos execução em emulador/dispositivo.
 
 
@@ -75,3 +75,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 43. **Abertura de AudioRecord na thread principal** — construir/iniciar a rota de áudio podia bloquear a UI em dispositivos/firmwares lentos. A abertura agora ocorre no executor dedicado, com estado `starting`, cancelamento por geração e descarte seguro de sessões obsoletas.
 44. **Start/stop durante abertura de áudio** — uma sessão podia ser parada antes de terminar de abrir e ainda assim publicar estado depois. A geração da sessão é validada antes e depois de abrir o recorder, e recursos de sessões obsoletas são liberados.
+
+
+45. **Permissão de áudio podia ser revogada entre UI e executor** — a checagem feita antes de enfileirar a abertura não era suficiente para lint nem para uma revogação concorrente. O executor revalida `RECORD_AUDIO` imediatamente antes de tocar nas APIs protegidas.
+46. **Warnings de testes por APIs depreciadas** — o smoke test Compose migrou para a API junit4 v2 e o teste duplicado que exercitava o alias depreciado de aceleração foi removido.

@@ -10,15 +10,6 @@ class SuperpowerMathTest {
     }
 
     @Test
-    fun dynamicAcceleration_isNearZeroAtOneG() {
-        assertEquals(
-            0f,
-            SuperpowerMath.dynamicAcceleration(0f, 0f, 9.80665f),
-            0.0001f,
-        )
-    }
-
-    @Test
     fun dynamicAccelerationFallback_removesOneGAtRest() {
         assertEquals(
             0f,

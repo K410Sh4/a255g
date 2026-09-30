@@ -106,6 +106,22 @@ class AudioAnalyzer(private val context: Context) {
     ) {
         if (generation.get() != session || closed) return
 
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            publishIfCurrent(
+                session,
+                onState,
+                AudioState(
+                    sampleRateHz = SAMPLE_RATE,
+                    lastError = "Permissão de microfone foi revogada.",
+                ),
+            )
+            return
+        }
+
         val minBuffer = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO,
