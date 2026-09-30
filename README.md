@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.3.0
+## Estado atual — v0.4.0
 
 Implementado:
 
@@ -16,7 +16,10 @@ Implementado:
 - NFC Reader Mode com ID, tecnologias e NDEF Text;
 - NetworkCapabilities;
 - baseline CPU determinística;
-- inventário interno ampliado (build, ABI, kernel, tela, bateria, OpenGL ES e system features);\n- cópia automática do inventário completo para a área de transferência ao abrir/atualizar;\n- snapshot completo também salvo no armazenamento interno privado do app;\n- compartilhamento de relatório de capacidades;
+- inventário interno ampliado (build, ABI, kernel, tela, bateria, OpenGL ES e system features);
+- cópia automática do inventário completo para a área de transferência ao abrir/atualizar;
+- snapshot completo também salvo no armazenamento interno privado do app;
+- compartilhamento de relatório de capacidades;
 - CI para build + testes + lint + APK.
 
 ## Princípio do projeto
@@ -98,3 +101,18 @@ A tela **Superpoderes** reúne seis modos de percepção ampliada usando apenas 
 O stream de sensores usado pela UI é limitado a aproximadamente 20 atualizações por segundo para evitar recomposições excessivas, embora os sensores continuem sendo amostrados pelo Android nas taxas solicitadas.
 
 AOIS e VDIS são detectados e exibidos com o `minDelay` anunciado pelo HAL, mas a v0.3 **não afirma taxa efetiva** desses canais até um benchmark físico específico medir eventos por segundo e jitter.
+
+
+## Visualizações 3D e UX — v0.4
+
+A v0.4 corrige a ausência de representações 3D na tela Superpoderes e reorganiza a interface para priorizar leitura humana.
+
+- **Orientação 3D:** cubo com projeção em perspectiva atualizado por yaw/pitch/roll do Rotation Vector.
+- **Visão Magnética 3D:** eixos espaciais + vetor normalizado do campo magnético.
+- métricas principais usam tipografia maior e rótulos curtos;
+- detalhes AOIS/VDIS ficam recolhidos em **Ver detalhes técnicos**;
+- valores longos deixam de competir com rótulos em duas colunas apertadas;
+- BLE e áudio usam ações claras de iniciar/parar;
+- textos técnicos foram reduzidos para observações curtas.
+
+As visualizações são desenhadas com Compose Canvas, sem engine 3D externa. Isso reduz dependências e mantém o render leve para este caso de uso.

@@ -10,9 +10,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,195 +40,293 @@ fun SuperpowersScreen(
     onStartAudio: () -> Unit,
     onStopAudio: () -> Unit,
 ) {
+    var showTechnical by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text(
-                "Superpoderes do A25",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                "Seis modos que transformam sensores reais do aparelho em percepção ampliada. " +
-                    "Os valores são medições do Android; interpretações como força de sinal BLE são relativas.",
-            )
-        }
-
-        item {
-            PowerCard("🧲 Visão Magnética") {
-                PowerValue("Campo total", format(sensors.magneticStrengthUt, "µT"))
-                PowerValue(
-                    "XYZ",
-                    "${f(sensors.magneticXUt)}, ${f(sensors.magneticYUt)}, ${f(sensors.magneticZUt)} µT",
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Superpoderes",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Útil para visualizar variações de campo magnético e perturbações próximas. " +
-                        "Não substitui um instrumento calibrado nem identifica materiais por si só.",
-                    style = MaterialTheme.typography.bodySmall,
+                    "Visualizações em tempo real usando os sensores reais do seu A25.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         item {
-            PowerCard("⚡ Detector de Movimento") {
-                PowerValue(
-                    "Aceleração dinâmica",
-                    format(sensors.dynamicAccelerationMs2, "m/s²"),
+            FriendlyCard(
+                title = "🧭 Orientação 3D",
+                subtitle = "Veja o celular girar junto com o aparelho.",
+            ) {
+                OrientationCube3D(
+                    yawDeg = sensors.yawDeg,
+                    pitchDeg = sensors.pitchDeg,
+                    rollDeg = sensors.rollDeg,
                 )
-                PowerValue(
-                    "Velocidade angular",
-                    format(sensors.angularSpeedRadS, "rad/s"),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CompactMetric("Yaw", format(sensors.yawDeg, "°"), Modifier.weight(1f))
+                    CompactMetric("Pitch", format(sensors.pitchDeg, "°"), Modifier.weight(1f))
+                    CompactMetric("Roll", format(sensors.rollDeg, "°"), Modifier.weight(1f))
+                }
+                StatusLine(
+                    if (sensors.orientationAvailable) {
+                        "Rotation Vector ativo"
+                    } else {
+                        "Rotation Vector não disponível"
+                    },
                 )
-                PowerValue(
-                    "Estado relativo",
-                    SuperpowerMath.motionLevel(
+            }
+        }
+
+        item {
+            FriendlyCard(
+                title = "🧲 Visão Magnética 3D",
+                subtitle = "A seta mostra a direção do campo magnético medido.",
+            ) {
+                MagneticVector3D(
+                    x = sensors.magneticXUt,
+                    y = sensors.magneticYUt,
+                    z = sensors.magneticZUt,
+                )
+                HeroMetric(
+                    label = "Força do campo",
+                    value = format(sensors.magneticStrengthUt, "µT"),
+                )
+                Text(
+                    "X ${f(sensors.magneticXUt)}  •  Y ${f(sensors.magneticYUt)}  •  Z ${f(sensors.magneticZUt)} µT",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item {
+            FriendlyCard(
+                title = "⚡ Movimento",
+                subtitle = "Percebe aceleração e rotação do aparelho.",
+            ) {
+                HeroMetric(
+                    label = "Estado",
+                    value = SuperpowerMath.motionLevel(
                         sensors.dynamicAccelerationMs2,
                         sensors.angularSpeedRadS,
                     ),
                 )
-                PowerValue(
-                    "AOIS",
-                    if (sensors.aoisAvailable) {
-                        "detectado · min ${sensors.aoisMinDelayUs ?: 0} µs"
-                    } else {
-                        "não exposto"
-                    },
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CompactMetric(
+                        "Aceleração",
+                        format(sensors.dynamicAccelerationMs2, "m/s²"),
+                        Modifier.weight(1f),
+                    )
+                    CompactMetric(
+                        "Rotação",
+                        format(sensors.angularSpeedRadS, "rad/s"),
+                        Modifier.weight(1f),
+                    )
+                }
+
+                TextButton(onClick = { showTechnical = !showTechnical }) {
+                    Text(if (showTechnical) "Ocultar detalhes técnicos" else "Ver detalhes técnicos")
+                }
+
+                if (showTechnical) {
+                    HorizontalDivider()
+                    TechnicalRow(
+                        "AOIS",
+                        if (sensors.aoisAvailable) {
+                            "Detectado · min ${sensors.aoisMinDelayUs ?: 0} µs"
+                        } else {
+                            "Não exposto"
+                        },
+                    )
+                    TechnicalRow(
+                        "VDIS",
+                        if (sensors.vdisAvailable) {
+                            "Detectado · min ${sensors.vdisMinDelayUs ?: 0} µs"
+                        } else {
+                            "Não exposto"
+                        },
+                    )
+                    Text(
+                        "O valor de min delay vem da HAL. A taxa real ainda precisa ser medida no aparelho.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        item {
+            FriendlyCard(
+                title = "💡 Luz",
+                subtitle = "Mede a iluminação do ambiente em tempo real.",
+            ) {
+                HeroMetric(
+                    label = "Iluminação",
+                    value = sensors.lightLux?.let { format(it, "lux") } ?: "Aguardando…",
                 )
-                PowerValue(
-                    "VDIS",
-                    if (sensors.vdisAvailable) {
-                        "detectado · min ${sensors.vdisMinDelayUs ?: 0} µs"
-                    } else {
-                        "não exposto"
+                TechnicalRow(
+                    "Canal Samsung CCT",
+                    when {
+                        !sensors.cctSensorAvailable -> "Não exposto"
+                        !sensors.cctStreamActive -> "Detectado, mas sem stream"
+                        sensors.cctRaw != null -> f(sensors.cctRaw)
+                        else -> "Aguardando evento"
                     },
                 )
                 Text(
-                    "A leitura ao vivo usa os sensores Android padrão. AOIS/VDIS são apenas sinalizados aqui " +
-                        "até terem taxa efetiva e semântica validadas em dispositivo.",
+                    "O CCT Samsung ainda é exibido como valor bruto até validarmos sua unidade real.",
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         item {
-            PowerCard("💡 Visão de Luz") {
-                PowerValue(
-                    "Luz ambiente",
-                    sensors.lightLux?.let { format(it, "lux") } ?: "aguardando sensor",
+            FriendlyCard(
+                title = "📡 Radar BLE",
+                subtitle = "Mostra dispositivos Bluetooth próximos e a força relativa do sinal.",
+            ) {
+                HeroMetric(
+                    label = "Dispositivos vistos",
+                    value = ble.devices.size.toString(),
                 )
-                PowerValue(
-                    "Canal CCT Samsung",
-                    if (!sensors.cctSensorAvailable) {
-                        "não exposto"
-                    } else if (!sensors.cctStreamActive) {
-                        "exposto, stream não iniciou"
-                    } else {
-                        sensors.cctRaw?.let { f(it) } ?: "ativo, aguardando evento"
-                    },
-                )
-                Text(
-                    "O valor CCT é mostrado como dado bruto do canal vendor Samsung; a unidade não é presumida " +
-                        "sem documentação ou validação física.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-
-        item {
-            PowerCard("🧭 Orientação 3D") {
-                PowerValue("Yaw", format(sensors.yawDeg, "°"))
-                PowerValue("Pitch", format(sensors.pitchDeg, "°"))
-                PowerValue("Roll", format(sensors.rollDeg, "°"))
-                PowerValue(
-                    "Rotation Vector",
-                    if (sensors.orientationAvailable) "disponível" else "não disponível",
-                )
-                Text(
-                    "A orientação usa o Rotation Vector fornecido pelo Android, que combina sensores do aparelho.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-
-        item {
-            PowerCard("📡 Radar BLE") {
-                PowerValue("Estado", if (ble.scanning) "escaneando" else "parado")
-                PowerValue("Dispositivos vistos", ble.devices.size.toString())
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onStartBle, enabled = !ble.scanning) {
-                        Text("Iniciar radar")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = onStartBle,
+                        enabled = !ble.scanning,
+                    ) {
+                        Text(if (ble.scanning) "Escaneando…" else "Iniciar radar")
                     }
-                    Button(onClick = onStopBle, enabled = ble.scanning) {
+                    OutlinedButton(
+                        onClick = onStopBle,
+                        enabled = ble.scanning,
+                    ) {
                         Text("Parar")
                     }
                 }
                 ble.lastError?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-                Text(
-                    "A faixa é baseada apenas em RSSI e serve como indicação relativa; paredes, corpo humano e " +
-                        "potência do transmissor alteram o resultado.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
         }
 
-        items(ble.devices.take(8), key = { "power-${it.key}" }) { device ->
+        items(ble.devices.take(6), key = { "power-${it.key}" }) { device ->
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(device.name, fontWeight = FontWeight.Bold)
-                    PowerValue("RSSI", "${device.rssi} dBm")
-                    PowerValue("Sinal relativo", SuperpowerMath.rssiBand(device.rssi))
-                    PowerValue("Endereço", device.address)
+                Column(
+                    Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        device.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "${device.rssi} dBm · ${SuperpowerMath.rssiBand(device.rssi)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        device.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
 
         item {
-            PowerCard("🎧 Ouvido Espectral") {
-                PowerValue("Estado", if (audio.running) "capturando" else "parado")
-                PowerValue("Nível RMS", String.format(Locale.US, "%.1f dBFS", audio.rmsDbFs))
-                PowerValue(
-                    "Frequência dominante",
-                    String.format(Locale.US, "%.1f Hz", audio.dominantFrequencyHz),
+            FriendlyCard(
+                title = "🎧 Ouvido Espectral",
+                subtitle = "Analisa o som localmente sem enviar áudio para a internet.",
+            ) {
+                HeroMetric(
+                    label = "Frequência dominante",
+                    value = String.format(
+                        Locale.US,
+                        "%.1f Hz",
+                        audio.dominantFrequencyHz,
+                    ),
                 )
-                PowerValue("Sample rate", "${audio.sampleRateHz} Hz")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onStartAudio, enabled = !audio.running) {
-                        Text("Ouvir espectro")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CompactMetric(
+                        "Nível",
+                        String.format(Locale.US, "%.1f dBFS", audio.rmsDbFs),
+                        Modifier.weight(1f),
+                    )
+                    CompactMetric(
+                        "Sample rate",
+                        "${audio.sampleRateHz} Hz",
+                        Modifier.weight(1f),
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = onStartAudio,
+                        enabled = !audio.running,
+                    ) {
+                        Text(if (audio.running) "Analisando…" else "Iniciar análise")
                     }
-                    Button(onClick = onStopAudio, enabled = audio.running) {
+                    OutlinedButton(
+                        onClick = onStopAudio,
+                        enabled = audio.running,
+                    ) {
                         Text("Parar")
                     }
                 }
                 audio.lastError?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-                Text(
-                    "Processamento PCM + FFT ocorre localmente no aparelho. O app não possui permissão INTERNET.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
         }
     }
 }
 
 @Composable
-private fun PowerCard(
+private fun FriendlyCard(
     title: String,
+    subtitle: String,
     content: @Composable () -> Unit,
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(
-            Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
                 title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+            )
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             content()
         }
@@ -229,15 +334,61 @@ private fun PowerCard(
 }
 
 @Composable
-private fun PowerValue(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
+private fun HeroMetric(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Text(
             value,
-            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun CompactMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun StatusLine(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun TechnicalRow(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
     }

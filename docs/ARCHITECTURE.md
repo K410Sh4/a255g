@@ -66,3 +66,20 @@ A validação de sensores, GNSS raw, Camera2, NFC, BLE, áudio e aceleração de
 `SuperpowerMath` mantém cálculos puros/testáveis de magnitude vetorial, aceleração dinâmica e classificações relativas. `SuperpowersScreen` apenas renderiza estado e aciona BLE/áudio; BLE e microfone continuam exigindo permissão explícita.
 
 AOIS (`com.samsung.sensor.gyroscope_aois`) e VDIS (`com.samsung.sensor.vdis_gyro`) são tratados como capacidades detectadas, não como streams validados. Isso evita transformar `minDelay` declarado em uma alegação de frequência real sem medição.
+
+
+## Visualização 3D e legibilidade (v0.4)
+
+`Realtime3D.kt` contém renderizadores Compose Canvas para:
+- cubo de orientação em perspectiva;
+- vetor magnético tridimensional projetado em eixos isométricos.
+
+`ThreeDMath` concentra rotação Euler e normalização vetorial em funções puras cobertas por testes unitários.
+
+A tela `SuperpowersScreen` foi reestruturada com hierarquia humana:
+1. visualização;
+2. métrica principal;
+3. métricas secundárias;
+4. detalhes técnicos sob demanda.
+
+A taxa de atualização de estado permanece limitada pelo `SensorRepository` a cerca de 20 atualizações de UI por segundo, evitando que a renderização 3D transforme cada evento bruto de sensor em recomposição Compose.
