@@ -44,6 +44,15 @@ class QuaternionMathTest {
     }
 
     @Test
+    fun normalize_nonFiniteInputFallsBackToIdentity() {
+        val result = QuaternionMath.normalize(
+            Quaternion(Float.NaN, 0f, 0f, 0f),
+        )
+
+        assertEquals(QuaternionMath.Identity, result)
+    }
+
+    @Test
     fun nlerp_staysNormalized() {
         val result = QuaternionMath.nlerp(
             QuaternionMath.Identity,
