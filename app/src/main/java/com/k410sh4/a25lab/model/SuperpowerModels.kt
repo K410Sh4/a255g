@@ -17,6 +17,7 @@ data class SuperpowerSensorState(
     val quaternionY: Float = 0f,
     val quaternionZ: Float = 0f,
     val orientationAvailable: Boolean = false,
+    val orientationSampleReady: Boolean = false,
     val cctSensorAvailable: Boolean = false,
     val cctStreamActive: Boolean = false,
     val aoisAvailable: Boolean = false,
