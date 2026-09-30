@@ -325,7 +325,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun stopAudio() {
         audioRequested = false
         audioAnalyzer.stop()
-        audio = audio.copy(running = false)
+        audio = audio.copy(running = false, starting = false)
     }
 
     fun onNfcTag(tag: Tag) {
@@ -436,7 +436,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
         gnss = gnss.copy(running = false)
         ble = ble.copy(scanning = false)
-        audio = audio.copy(running = false)
+        audio = audio.copy(running = false, starting = false)
 
         if (clearUserRequests) {
             gnssRequested = false

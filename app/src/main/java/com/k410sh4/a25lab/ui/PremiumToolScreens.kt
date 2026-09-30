@@ -231,7 +231,10 @@ fun PremiumAudioScreen(
             "Fonte de captura",
             state.sourceLabel + if (state.fallbackUsed) " · fallback ativo" else "",
         )
-        StartStopButtons(state.running, onStart, onStop)
+        if (state.starting) {
+            HintText("Abrindo a rota de áudio fora da thread da interface…")
+        }
+        StartStopButtons(state.running || state.starting, onStart, onStop)
         state.lastError?.let { ErrorMessage(it) }
         HintText("PCM e FFT são processados localmente. O app continua sem permissão INTERNET.")
     }

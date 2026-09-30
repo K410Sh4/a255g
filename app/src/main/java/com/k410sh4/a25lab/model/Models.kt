@@ -135,6 +135,7 @@ data class CameraProbeResult(
 
 data class AudioState(
     val running: Boolean = false,
+    val starting: Boolean = false,
     val rmsDbFs: Float = -120f,
     val dominantFrequencyHz: Float = 0f,
     val sampleRateHz: Int = 44_100,

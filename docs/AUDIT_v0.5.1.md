@@ -71,3 +71,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 40. **Reinício BLE podia entregar estado antigo ao callback novo** — a sessão anterior agora é parada e desacoplada antes de registrar o callback da nova sessão; falhas de scan também cancelam manutenção periódica.
 41. **Receiver GNSS mais exposto que o necessário** — o receiver dinâmico de mudança de modo de localização agora é `RECEIVER_NOT_EXPORTED`.
 42. **Dashboard permitia ações durante refresh** — Atualizar, Copiar e Compartilhar agora refletem o estado real do snapshot e evitam ações concorrentes durante a atualização.
+
+
+43. **Abertura de AudioRecord na thread principal** — construir/iniciar a rota de áudio podia bloquear a UI em dispositivos/firmwares lentos. A abertura agora ocorre no executor dedicado, com estado `starting`, cancelamento por geração e descarte seguro de sessões obsoletas.
+44. **Start/stop durante abertura de áudio** — uma sessão podia ser parada antes de terminar de abrir e ainda assim publicar estado depois. A geração da sessão é validada antes e depois de abrir o recorder, e recursos de sessões obsoletas são liberados.
