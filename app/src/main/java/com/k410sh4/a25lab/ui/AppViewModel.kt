@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.PersistableBundle
-import android.nfc.NfcAdapter
+import android.nfc.NfcManager
 import android.nfc.Tag
 import android.os.Handler
 import android.os.Looper
@@ -528,9 +528,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private fun currentNfcState(): NfcState {
-        val adapter = NfcAdapter.getDefaultAdapter(
-            getApplication<Application>().applicationContext,
-        )
+        val adapter = getApplication<Application>()
+            .getSystemService(NfcManager::class.java)
+            ?.defaultAdapter
         return NfcState(
             available = adapter != null,
             enabled = adapter?.isEnabled == true,
