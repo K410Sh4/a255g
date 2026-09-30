@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,26 +35,35 @@ import com.k410sh4.a25lab.ui.theme.A25LabTheme
 @Composable
 fun A25LabApp(viewModel: AppViewModel) {
     val context = LocalContext.current
-    var pendingPermissionAction by remember {
-        mutableStateOf<(() -> Unit)?>(null)
+    var pendingPermissionAction by rememberSaveable {
+        mutableStateOf<String?>(null)
     }
-    var permissionRequestInFlight by remember {
+    var permissionRequestInFlight by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    fun executePermissionAction(actionName: String?) {
+        when (actionName) {
+            PermissionAction.Gnss.name -> viewModel.startGnss()
+            PermissionAction.Bluetooth.name -> viewModel.startBle()
+            PermissionAction.Audio.name -> viewModel.startAudio()
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
-        // O módulo de destino valida a permissão novamente e produz um erro
-        // legível se o usuário negou ou concedeu apenas acesso aproximado.
-        val action = pendingPermissionAction
+        // O destino revalida a permissão. Guardamos apenas um identificador
+        // restaurável, nunca uma closure que se perde ao recriar a Activity.
+        val actionName = pendingPermissionAction
         pendingPermissionAction = null
         permissionRequestInFlight = false
-        action?.invoke()
+        executePermissionAction(actionName)
     }
 
     fun runWithPermissions(
         permissions: Array<String>,
+        permissionAction: PermissionAction,
         action: () -> Unit,
     ) {
         val allGranted = permissions.all { permission ->
@@ -66,7 +76,7 @@ fun A25LabApp(viewModel: AppViewModel) {
         if (allGranted) {
             action()
         } else if (!permissionRequestInFlight) {
-            pendingPermissionAction = action
+            pendingPermissionAction = permissionAction.name
             permissionRequestInFlight = true
             runCatching {
                 permissionLauncher.launch(permissions)
@@ -135,7 +145,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         copyStatus = viewModel.copyStatus,
                         refreshRunning = viewModel.refreshRunning,
                         inventoryWarnings = viewModel.inventoryWarnings,
-                        onRefresh = viewModel::refreshAllAndCopy,
+                        onRefresh = viewModel::refreshAll,
                         onCopy = viewModel::copySpecificationsToClipboard,
                         onNavigate = viewModel::navigate,
                         onShare = {
@@ -199,6 +209,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                                     Manifest.permission.ACCESS_COARSE_LOCATION,
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                 ),
+                                PermissionAction.Gnss,
                                 viewModel::startGnss,
                             )
                         },
@@ -213,6 +224,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                                 arrayOf(
                                     Manifest.permission.BLUETOOTH_SCAN,
                                 ),
+                                PermissionAction.Bluetooth,
                                 viewModel::startBle,
                             )
                         },
@@ -227,6 +239,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                                 arrayOf(
                                     Manifest.permission.RECORD_AUDIO,
                                 ),
+                                PermissionAction.Audio,
                                 viewModel::startAudio,
                             )
                         },
@@ -331,4 +344,11 @@ private fun parentScreen(screen: Screen): Screen = when (screen) {
     Screen.Connectivity,
     Screen.Lab,
     -> screen
+}
+
+
+private enum class PermissionAction {
+    Gnss,
+    Bluetooth,
+    Audio,
 }

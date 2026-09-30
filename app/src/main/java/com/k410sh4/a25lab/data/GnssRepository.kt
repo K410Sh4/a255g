@@ -71,17 +71,20 @@ class GnssRepository(private val context: Context) {
     }
 
     fun start(onState: (GnssState) -> Unit) {
+        // Sempre encerra uma sessão anterior antes de validar a nova tentativa.
+        // Isso evita manter callbacks/listeners vivos se a permissão foi
+        // revogada entre duas inicializações.
+        stop()
+        callback = onState
+
         if (!hasFineLocationPermission()) {
-            onState(
-                GnssState(
-                    lastError = "Permissão de localização precisa necessária.",
-                ),
+            state = GnssState(
+                lastError = "Permissão de localização precisa necessária.",
             )
+            callback?.invoke(state)
             return
         }
 
-        stop()
-        callback = onState
         registerLocationModeReceiver()
 
         val locationEnabled = runCatching {

@@ -325,9 +325,15 @@ class AudioAnalyzer(private val context: Context) {
                     return
                 }
 
+                var mean = 0.0
+                for (sample in frame) {
+                    mean += sample.toDouble()
+                }
+                mean /= frame.size.toDouble()
+
                 var energy = 0.0
                 for (sample in frame) {
-                    val normalized = sample / 32768.0
+                    val normalized = (sample.toDouble() - mean) / 32768.0
                     energy += normalized * normalized
                 }
 

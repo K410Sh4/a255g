@@ -71,7 +71,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var gnssRequested = false
     private var bleRequested = false
     private var audioRequested = false
-    private var pendingAutomaticReport: Pair<String, Boolean>? = null
     private var computeFuture: Future<*>? = null
 
     var screen by mutableStateOf(Screen.Dashboard)
@@ -114,7 +113,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     init {
-        refreshAllAndCopy()
+        refreshAll()
     }
 
     fun navigate(target: Screen) {
@@ -199,15 +198,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun onAppForeground() {
         inForeground = true
 
-        pendingAutomaticReport?.let { (text, fileSaved) ->
-            pendingAutomaticReport = null
-            copyReportToClipboardAndPublishStatus(
-                text = text,
-                fileSaved = fileSaved,
-                automatic = true,
-            )
-        }
-
         startAutomaticModulesForCurrentScreen()
 
         when (screen) {
@@ -218,7 +208,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refreshAllAndCopy() {
+    fun refreshAll() {
         if (refreshRunning) return
 
         refreshRunning = true
@@ -300,19 +290,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         device = deviceSnapshot
                         refreshRunning = false
 
-                        if (deviceSnapshot == null) {
-                            copyStatus =
+                        copyStatus = when {
+                            deviceSnapshot == null ->
                                 "Snapshot indisponível; consulte os detalhes do laboratório."
-                        } else if (inForeground) {
-                            copyReportToClipboardAndPublishStatus(
-                                text = text,
-                                fileSaved = fileSaved,
-                                automatic = true,
-                            )
-                        } else {
-                            pendingAutomaticReport = text to fileSaved
-                            copyStatus =
-                                "Inventário salvo; a cópia automática aguardará o retorno ao app."
+                            fileSaved ->
+                                "Inventário atualizado e salvo localmente. Use Copiar para enviar ao clipboard."
+                            else ->
+                                "Inventário atualizado; falha ao salvar o snapshot privado."
                         }
                     }
                 }.onFailure { error ->
@@ -332,7 +316,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refreshStaticProbe() = refreshAllAndCopy()
+    fun refreshStaticProbe() = refreshAll()
 
     fun refreshNetwork() {
         network = runCatching {
@@ -563,7 +547,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         nfcExecutor.shutdownNow()
         computeExecutor.shutdownNow()
         mainHandler.removeCallbacksAndMessages(null)
-        pendingAutomaticReport = null
         super.onCleared()
     }
 
@@ -631,32 +614,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             available = adapter != null,
             enabled = adapter?.isEnabled == true,
         )
-    }
-
-    private fun copyReportToClipboardAndPublishStatus(
-        text: String,
-        fileSaved: Boolean,
-        automatic: Boolean,
-    ) {
-        val generation = reportGeneration.incrementAndGet()
-        val clipboardResult = runCatching {
-            clipboard.setPrimaryClip(reportClip(text))
-        }
-
-        if (reportGeneration.get() != generation) return
-
-        copyStatus = when {
-            clipboardResult.isSuccess && fileSaved && automatic ->
-                "Inventário atualizado, copiado automaticamente e salvo localmente."
-            clipboardResult.isSuccess && fileSaved ->
-                "Relatório copiado e salvo localmente."
-            clipboardResult.isSuccess ->
-                "Relatório copiado; falha ao salvar o snapshot privado."
-            fileSaved ->
-                "Snapshot salvo; falha ao copiar para o clipboard."
-            else ->
-                "Falha ao copiar e ao salvar o inventário."
-        }
     }
 
     private fun reportClip(text: String): ClipData =
