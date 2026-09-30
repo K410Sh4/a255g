@@ -111,6 +111,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         modifier = Modifier.padding(padding),
                         device = viewModel.device,
                         copyStatus = viewModel.copyStatus,
+                        refreshRunning = viewModel.refreshRunning,
                         onRefresh = viewModel::refreshAllAndCopy,
                         onCopy = viewModel::copySpecificationsToClipboard,
                         onNavigate = viewModel::navigate,

@@ -48,7 +48,7 @@ fun PremiumSensorsScreen(
             ToolHeader(
                 eyebrow = "LABORATÓRIO",
                 title = "Sensores",
-                subtitle = "${sensors.size} sensores expostos · $vendorCount vendor/Samsung",
+                subtitle = "${sensors.size} sensores expostos · $vendorCount vendor/OEM",
             )
         }
 

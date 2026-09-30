@@ -174,7 +174,7 @@ class GnssRepository(private val context: Context) {
                 context,
                 locationModeReceiver,
                 IntentFilter(LocationManager.MODE_CHANGED_ACTION),
-                ContextCompat.RECEIVER_EXPORTED,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
             )
             locationReceiverRegistered = true
         }

@@ -53,10 +53,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private val clipboard = application.getSystemService(ClipboardManager::class.java)
     private val snapshotFile = File(
-        application.filesDir,
+        application.noBackupFilesDir,
         "a25lab_last_internal_specs.txt",
     )
     private val reportGeneration = AtomicLong(0L)
+    private val nfcReadGeneration = AtomicLong(0L)
+
+    @Volatile
+    private var cleared = false
 
     private var inForeground = false
     private var gnssRequested = false
@@ -109,6 +113,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val leavingNfc = screen == Screen.Nfc && target != Screen.Nfc
         stopLiveModules(clearUserRequests = true)
         if (leavingNfc) {
+            nfcReadGeneration.incrementAndGet()
             val current = currentNfcState()
             nfc = NfcState(
                 available = current.available,
@@ -123,6 +128,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onAppBackground() {
         inForeground = false
+        nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = false)
     }
 
@@ -323,14 +329,26 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onNfcTag(tag: Tag) {
+        if (!inForeground || screen != Screen.Nfc || cleared) return
+
         val state = currentNfcState()
+        val readGeneration = nfcReadGeneration.incrementAndGet()
+
         ioExecutor.execute {
             val parsed = NfcParser.parse(
                 tag = tag,
                 available = state.available,
                 enabled = state.enabled,
             )
-            post { nfc = parsed }
+            post {
+                if (
+                    nfcReadGeneration.get() == readGeneration &&
+                    inForeground &&
+                    screen == Screen.Nfc
+                ) {
+                    nfc = parsed
+                }
+            }
         }
     }
 
@@ -371,6 +389,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     override fun onCleared() {
+        cleared = true
+        nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = true)
         audioAnalyzer.close()
         ioExecutor.shutdownNow()
@@ -475,10 +495,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
 
     private fun post(block: () -> Unit) {
+        if (cleared) return
+
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            block()
+            if (!cleared) block()
         } else {
-            mainHandler.post(block)
+            mainHandler.post {
+                if (!cleared) block()
+            }
         }
     }
 }

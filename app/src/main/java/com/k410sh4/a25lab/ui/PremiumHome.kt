@@ -30,6 +30,7 @@ fun PremiumDashboardScreen(
     modifier: Modifier,
     device: DeviceSnapshot?,
     copyStatus: String,
+    refreshRunning: Boolean,
     onRefresh: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit,
@@ -181,11 +182,22 @@ fun PremiumDashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Button(onClick = onRefresh) { Text("Atualizar") }
-                        OutlinedButton(onClick = onCopy) { Text("Copiar") }
+                        Button(
+                            onClick = onRefresh,
+                            enabled = !refreshRunning,
+                        ) {
+                            Text(if (refreshRunning) "Atualizando…" else "Atualizar")
+                        }
+                        OutlinedButton(
+                            onClick = onCopy,
+                            enabled = device != null && !refreshRunning,
+                        ) {
+                            Text("Copiar")
+                        }
                     }
                     OutlinedButton(
                         onClick = onShare,
+                        enabled = device != null && !refreshRunning,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Compartilhar inventário")
@@ -206,10 +218,10 @@ fun PerceptionHubScreen(
         modifier = modifier,
         eyebrow = "PERCEPÇÃO",
         title = "Perceba além dos sentidos",
-        subtitle = "Visualizações e análises usando sensores, câmera e microfone do A25.",
+        subtitle = "Visualizações e análises usando sensores de movimento, ambiente e microfone do A25.",
         cards = listOf(
             HubItem("◎", "Movimento & 3D", "Pose 3D, aceleração, rotação, AOIS e VDIS.", Screen.Superpowers),
-            HubItem("◇", "Ambiente", "Campo magnético 3D, luz e canal CCT Samsung.", Screen.Environment),
+            HubItem("◇", "Ambiente", "Campo magnético 3D, luz e canal vendor light_cct.", Screen.Environment),
             HubItem("≈", "Áudio", "RMS, frequência dominante e FFT local.", Screen.Audio),
         ),
         onNavigate = onNavigate,

@@ -62,3 +62,12 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 34. **AndroidX mais novo incompatível com compileSdk 36** — a atualização para Compose 1.12.1/Core 1.19.1/Lifecycle 2.11.0 falhou objetivamente em `checkDebugAarMetadata`: esses artefatos exigem compileSdk 37. Como API 37 não está disponível no canal estável da CI, as versões que já passaram na baseline foram restauradas. O lint ignora apenas `OldTargetApi` e `GradleDependency` por decisão documentada; demais warnings continuam promovidos a erro.
 35. **setup-gradle ainda em Node 20** — o log da CI apontou `gradle/actions/setup-gradle@v4`. A action foi atualizada para `@v6`, cujo runtime é Node 24 segundo a documentação atual do projeto.
+
+
+36. **Race assíncrona no NFC** — uma leitura iniciada na tela NFC podia terminar depois da navegação e recolocar UID/NDEF na memória. Leituras agora possuem geração, apenas a mais recente pode publicar e qualquer saída/background invalida resultados pendentes.
+37. **Snapshot salvo em diretório de backup comum** — apesar das regras de backup já bloquearem exportação, o snapshot agora usa `noBackupFilesDir` como defesa adicional.
+38. **Callbacks tardios após ViewModel encerrado** — tarefas de I/O podiam tentar publicar estado após `onCleared()`. O ViewModel agora invalida publicações tardias explicitamente.
+39. **Yaw/Pitch/Roll não correspondiam ao 3D suavizado** — os números vinham do sample bruto enquanto o telefone 3D usava quaternion filtrado. As métricas agora são derivadas do mesmo quaternion suavizado.
+40. **Reinício BLE podia entregar estado antigo ao callback novo** — a sessão anterior agora é parada e desacoplada antes de registrar o callback da nova sessão; falhas de scan também cancelam manutenção periódica.
+41. **Receiver GNSS mais exposto que o necessário** — o receiver dinâmico de mudança de modo de localização agora é `RECEIVER_NOT_EXPORTED`.
+42. **Dashboard permitia ações durante refresh** — Atualizar, Copiar e Compartilhar agora refletem o estado real do snapshot e evitam ações concorrentes durante a atualização.

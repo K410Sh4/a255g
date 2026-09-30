@@ -35,6 +35,7 @@ class SensorRepository(context: Context) : SensorEventListener {
     private val rotationMatrix = FloatArray(9)
     private val orientationRadians = FloatArray(3)
     private val rotationQuaternion = FloatArray(4)
+    private val smoothedRotationVector = FloatArray(4)
     private var smoothedQuaternion = QuaternionMath.Identity
     private var usingLinearAccelerationSensor = false
 
@@ -235,8 +236,6 @@ class SensorRepository(context: Context) : SensorEventListener {
                 latestSuperpower.copy(lightLux = values[0])
             }
             event.sensor.type == Sensor.TYPE_ROTATION_VECTOR && values.size >= 3 -> {
-                SensorManager.getRotationMatrixFromVector(rotationMatrix, values)
-                SensorManager.getOrientation(rotationMatrix, orientationRadians)
                 SensorManager.getQuaternionFromVector(rotationQuaternion, values)
 
                 val rawQuaternion = QuaternionMath.normalize(
@@ -258,6 +257,19 @@ class SensorRepository(context: Context) : SensorEventListener {
                     QuaternionMath.nlerp(smoothedQuaternion, rawQuaternion, alpha)
                 }
                 lastRotationTimestampNs = event.timestamp
+
+                smoothedRotationVector[0] = smoothedQuaternion.x
+                smoothedRotationVector[1] = smoothedQuaternion.y
+                smoothedRotationVector[2] = smoothedQuaternion.z
+                smoothedRotationVector[3] = smoothedQuaternion.w
+                SensorManager.getRotationMatrixFromVector(
+                    rotationMatrix,
+                    smoothedRotationVector,
+                )
+                SensorManager.getOrientation(
+                    rotationMatrix,
+                    orientationRadians,
+                )
 
                 latestSuperpower.copy(
                     yawDeg = radiansToDegrees(orientationRadians[0]),

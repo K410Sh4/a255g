@@ -48,6 +48,7 @@ class BleRepository(private val context: Context) {
         }
 
         override fun onScanFailed(errorCode: Int) {
+            maintenanceHandler.removeCallbacks(maintenanceRunnable)
             state = state.copy(
                 scanning = false,
                 lastError = "Falha no scan BLE: código $errorCode",
@@ -57,6 +58,7 @@ class BleRepository(private val context: Context) {
     }
 
     fun start(onState: (BleState) -> Unit) {
+        stopInternal(clearCallback = true)
         callback = onState
 
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
@@ -70,7 +72,6 @@ class BleRepository(private val context: Context) {
             return
         }
 
-        stopInternal(clearCallback = false)
         devices.clear()
         lastPublishElapsedMs = 0L
         state = BleState(scanning = true)
