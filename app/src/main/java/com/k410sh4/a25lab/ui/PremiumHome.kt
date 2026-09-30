@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.k410sh4.a25lab.model.DeviceSnapshot
@@ -210,12 +211,14 @@ fun PremiumDashboardScreen(
                         Button(
                             onClick = onRefresh,
                             enabled = !refreshRunning,
+                            modifier = Modifier.weight(1f),
                         ) {
                             Text(if (refreshRunning) "Atualizando…" else "Atualizar")
                         }
                         OutlinedButton(
                             onClick = onCopy,
                             enabled = device != null && !refreshRunning,
+                            modifier = Modifier.weight(1f),
                         ) {
                             Text("Copiar")
                         }
@@ -382,7 +385,9 @@ private fun CategoryCard(
             ) {
                 Text(
                     icon,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .clearAndSetSemantics { },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
