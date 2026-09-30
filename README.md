@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.4.0
+## Estado atual — v0.5.0
 
 Implementado:
 
@@ -116,3 +116,29 @@ A v0.4 corrige a ausência de representações 3D na tela Superpoderes e reorgan
 - textos técnicos foram reduzidos para observações curtas.
 
 As visualizações são desenhadas com Compose Canvas, sem engine 3D externa. Isso reduz dependências e mantém o render leve para este caso de uso.
+
+## Premium UI + categorias + quaternion 3D — v0.5
+
+A interface principal foi reorganizada em quatro áreas persistentes:
+
+- **Início:** resumo do aparelho, status e inventário.
+- **Percepção:** Movimento & 3D, Ambiente e Áudio.
+- **Conectividade:** BLE, GNSS, NFC e Rede.
+- **Laboratório:** Sensores, Camera2 e Compute/IA.
+
+A navegação inferior permanece disponível em toda a aplicação para reduzir profundidade e facilitar retorno entre áreas.
+
+### 3D
+
+A pose do aparelho deixou de aplicar yaw/pitch/roll diretamente ao wireframe. O SensorRepository agora captura o quaternion do TYPE_ROTATION_VECTOR, aplica suavização normalizada e entrega o quaternion para o render.
+
+O novo PhonePose3D:
+- representa um telefone em vez de um cubo genérico;
+- usa faces preenchidas e profundidade em perspectiva;
+- permite **Centralizar posição atual**;
+- calcula orientação relativa ao ponto de referência;
+- mantém uma grade espacial e eixos de orientação.
+
+MagneticField3D passou a usar uma esfera/grade visual, eixos e vetor do campo com intensidade relativa.
+
+A UI mantém limite de publicação de estado em aproximadamente 20 Hz para evitar recomposição excessiva.
