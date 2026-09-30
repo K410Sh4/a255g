@@ -155,6 +155,7 @@ data class NetworkState(
     val downstreamKbps: Int = 0,
     val upstreamKbps: Int = 0,
     val metered: Boolean = false,
+    val lastError: String? = null,
 )
 
 data class NfcState(
