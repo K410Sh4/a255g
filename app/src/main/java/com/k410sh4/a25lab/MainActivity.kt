@@ -1,6 +1,7 @@
 package com.k410sh4.a25lab
 
 import android.nfc.NfcAdapter
+import android.nfc.NfcManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,7 +20,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        nfcAdapter = getSystemService(NfcManager::class.java)?.defaultAdapter
 
         setContent {
             DisposableEffect(viewModel.screen) {
