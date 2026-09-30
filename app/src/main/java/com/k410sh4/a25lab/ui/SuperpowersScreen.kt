@@ -48,13 +48,13 @@ fun Movement3DScreen(
     var showTechnical by remember { mutableStateOf(false) }
 
     LaunchedEffect(
-        sensors.orientationAvailable,
+        sensors.orientationSampleReady,
         sensors.quaternionW,
         sensors.quaternionX,
         sensors.quaternionY,
         sensors.quaternionZ,
     ) {
-        if (sensors.orientationAvailable && reference == null) {
+        if (sensors.orientationSampleReady && reference == null) {
             reference = QuaternionMath.normalize(current)
         }
     }
@@ -92,7 +92,7 @@ fun Movement3DScreen(
 
                 OutlinedButton(
                     onClick = { reference = QuaternionMath.normalize(current) },
-                    enabled = sensors.orientationAvailable,
+                    enabled = sensors.orientationSampleReady,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Centralizar posição atual")
