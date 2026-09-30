@@ -133,13 +133,17 @@ fun Movement3DScreen(
                 subtitle = "Resumo humano da aceleração e rotação detectadas.",
             ) {
                 Text(
-                    if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
-                        "Aceleração indisponível"
-                    } else {
-                        SuperpowerMath.motionLevel(
-                            sensors.dynamicAccelerationMs2,
-                            sensors.angularSpeedRadS,
-                        )
+                    when {
+                        sensors.accelerationSource == AccelerationSource.UNAVAILABLE ->
+                            "Aceleração indisponível"
+                        !sensors.accelerationSampleReady ||
+                            !sensors.angularSampleReady ->
+                            "Aguardando sensores…"
+                        else ->
+                            SuperpowerMath.motionLevel(
+                                sensors.dynamicAccelerationMs2,
+                                sensors.angularSpeedRadS,
+                            )
                     },
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
@@ -151,16 +155,23 @@ fun Movement3DScreen(
                 ) {
                     MetricBlock(
                         "Aceleração dinâmica",
-                        if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
-                            "N/D"
-                        } else {
-                            format(sensors.dynamicAccelerationMs2, "m/s²")
+                        when {
+                            sensors.accelerationSource == AccelerationSource.UNAVAILABLE ->
+                                "N/D"
+                            !sensors.accelerationSampleReady ->
+                                "Aguardando…"
+                            else ->
+                                format(sensors.dynamicAccelerationMs2, "m/s²")
                         },
                         Modifier.weight(1f),
                     )
                     MetricBlock(
                         "Velocidade angular",
-                        format(sensors.angularSpeedRadS, "rad/s"),
+                        when {
+                            !sensors.angularStreamActive -> "Indisponível"
+                            !sensors.angularSampleReady -> "Aguardando…"
+                            else -> format(sensors.angularSpeedRadS, "rad/s")
+                        },
                         Modifier.weight(1f),
                     )
                 }
@@ -174,6 +185,14 @@ fun Movement3DScreen(
                     TechnicalFact(
                         "Rotation Vector",
                         if (sensors.orientationAvailable) "Ativo" else "Indisponível",
+                    )
+                    TechnicalFact(
+                        "Giroscópio",
+                        when {
+                            !sensors.angularStreamActive -> "Indisponível"
+                            !sensors.angularSampleReady -> "Ativo · aguardando amostra"
+                            else -> "Ativo · recebendo amostras"
+                        },
                     )
                     TechnicalFact(
                         "Fonte da aceleração",
@@ -276,7 +295,11 @@ fun EnvironmentScreen(
                             verticalArrangement = Arrangement.Center,
                         ) {
                             Text(
-                                "Aguardando magnetômetro…",
+                                if (sensors.magneticStreamActive) {
+                                    "Aguardando magnetômetro…"
+                                } else {
+                                    "Magnetômetro indisponível"
+                                },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -308,7 +331,11 @@ fun EnvironmentScreen(
                 subtitle = "Leitura do sensor principal e do canal Samsung CCT quando disponível.",
             ) {
                 Text(
-                    sensors.lightLux?.let { format(it, "lux") } ?: "Aguardando leitura…",
+                    when {
+                        !sensors.lightStreamActive -> "Sensor de luz indisponível"
+                        sensors.lightLux == null -> "Aguardando leitura…"
+                        else -> format(sensors.lightLux, "lux")
+                    },
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )
