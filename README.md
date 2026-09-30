@@ -33,7 +33,7 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 - Kotlin
 - Jetpack Compose 1.11.4 + Material 3 1.3.2
 - Android Gradle Plugin 9.4.1
-- Gradle 9.6.0 na CI
+- Gradle 9.8.0 na CI
 - compile/target SDK 36
 - min SDK 31
 
@@ -173,6 +173,6 @@ Pontos dependentes do SM-A256E continuam marcados como validação física, não
 
 ## Build reproduzível
 
-O projeto inclui `gradlew`, `gradlew.bat`, `gradle-wrapper.jar` oficial e `gradle-wrapper.properties` fixado no Gradle 9.6.0. A distribuição `gradle-9.6.0-bin.zip` possui SHA-256 pinado no wrapper, e a CI usa `gradle/actions/setup-gradle` com validação automática do JAR antes de executar qualquer build.
+O projeto inclui `gradlew`, `gradlew.bat`, `gradle-wrapper.jar` oficial e `gradle-wrapper.properties` fixado no Gradle 9.8.0. A distribuição `gradle-9.8.0-bin.zip` possui SHA-256 pinado no wrapper, e a CI usa `gradle/actions/setup-gradle` com validação automática do JAR antes de executar qualquer build.
 
 Isso evita depender de uma instalação global de Gradle diferente entre máquinas.

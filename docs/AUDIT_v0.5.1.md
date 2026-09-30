@@ -197,3 +197,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 122. **Projeção magnética podia sair da esfera 3D** — o vetor oblíquo agora é limitado ao raio visual, com teste unitário.
 123. **FFT ignorava o bin de Nyquist** — a busca de pico inclui N/2 e possui regressão em 22,05 kHz.
 124. **Áudio/rede ainda exibiam valores configurados como leitura ativa** — fonte/sample rate ficam N/D fora de sessão e bandwidth declarado fica N/D sem rede ativa.
+
+
+125. **Run #93 confirmou dois MissingPermission no cleanup BLE** — o lint não considera `runCatching` evidência suficiente de tratamento de permissão para `stopScan`. Os dois pontos agora usam `try/catch` explícito para `SecurityException` e `RuntimeException`, mantendo cleanup best-effort sem adicionar `BLUETOOTH_CONNECT`.
+126. **Wrapper ficou atrás da distribuição estável detectada pelo lint** — a distribuição foi atualizada de Gradle 9.6.0 para 9.8.0 com SHA-256 oficial fixado no `gradle-wrapper.properties`. O JAR launcher continua sendo validado pela action `setup-gradle`.

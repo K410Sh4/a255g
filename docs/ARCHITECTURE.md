@@ -53,7 +53,7 @@ A CI executa:
 7. smoke tests instrumentados em emulador Android 16/API 36;
 8. upload de relatórios e APKs somente conforme o resultado das etapas.
 
-O build usa exclusivamente o Gradle Wrapper 9.6.0 versionado no repositório. A distribuição binária possui SHA-256 fixado em `gradle-wrapper.properties`.
+O build usa exclusivamente o Gradle Wrapper 9.8.0 versionado no repositório. A distribuição binária possui SHA-256 fixado em `gradle-wrapper.properties`.
 
 A validação de sensores vendor, GNSS raw real, Camera2 físico, NFC, BLE, áudio e aceleração de IA ainda exige teste físico no SM-A256E.
 
@@ -133,6 +133,6 @@ Continuam exigindo aparelho físico:
 
 ## Build reproduzível e supply chain
 
-O repositório contém `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar` e `gradle-wrapper.properties`. O Wrapper está fixado no Gradle 9.6.0, com checksum SHA-256 da distribuição `-bin`. A CI usa `gradle/actions/setup-gradle`, que valida o JAR do wrapper contra checksums oficiais antes de executar os comandos.
+O repositório contém `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar` e `gradle-wrapper.properties`. O Wrapper está fixado no Gradle 9.8.0, com checksum SHA-256 da distribuição `-bin`. A CI usa `gradle/actions/setup-gradle`, que valida o JAR do wrapper contra checksums oficiais antes de executar os comandos.
 
 As GitHub Actions usadas no workflow são referenciadas por commit imutável, reduzindo o risco de uma tag upstream mudar de conteúdo.

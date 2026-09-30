@@ -116,8 +116,12 @@ class BleRepository(private val context: Context) {
 
     private fun stopInternal(clearCallback: Boolean) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        runCatching {
+        try {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
+        } catch (_: SecurityException) {
+            // Best-effort cleanup: BLUETOOTH_SCAN may have been revoked.
+        } catch (_: RuntimeException) {
+            // The adapter/scanner may have changed state during cleanup.
         }
         // Cleanup best-effort: a permissão ou o estado do adaptador
         // podem mudar entre start e stop.
@@ -138,8 +142,12 @@ class BleRepository(private val context: Context) {
 
     private fun finishScanWithError(message: String) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        runCatching {
+        try {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
+        } catch (_: SecurityException) {
+            // Best-effort cleanup: BLUETOOTH_SCAN may have been revoked.
+        } catch (_: RuntimeException) {
+            // The adapter/scanner may have changed state during cleanup.
         }
 
         state = state.copy(
