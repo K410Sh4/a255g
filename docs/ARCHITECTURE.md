@@ -83,3 +83,17 @@ A tela `SuperpowersScreen` foi reestruturada com hierarquia humana:
 4. detalhes técnicos sob demanda.
 
 A taxa de atualização de estado permanece limitada pelo `SensorRepository` a cerca de 20 atualizações de UI por segundo, evitando que a renderização 3D transforme cada evento bruto de sensor em recomposição Compose.
+
+## UI premium e navegação por categorias (v0.5)
+
+A navegação continua sem NavController, porque o app ainda possui uma Activity e um estado simples de tela mantido pelo AppViewModel. Foram adicionados quatro destinos raiz: Dashboard, Percepção, Conectividade e Laboratório. As telas de detalhe retornam ao grupo pai correspondente.
+
+PremiumHome.kt concentra dashboard e hubs de categoria. A25LabTheme fornece paleta clara/escura própria sem depender de bibliotecas visuais extras.
+
+## Pose 3D por quaternion
+
+SensorRepository usa SensorManager.getQuaternionFromVector para obter a orientação do Rotation Vector e suaviza o quaternion com nlerp antes de publicar o estado.
+
+QuaternionMath concentra normalização, conjugação, multiplicação, rotação de vértices, orientação relativa e interpolação normalizada. Essas operações são cobertas por testes unitários.
+
+O render PhonePose3D usa um quaternion relativo a uma referência recenterizável. Isso reduz gimbal lock e evita a ordem Euler arbitrária usada na v0.4.
