@@ -161,3 +161,10 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 98. **NDEF grande era decodificado integralmente antes do limite visual** — o parser limita a janela de decodificação a 16 KiB, preserva limite visual de 4096 caracteres e indica truncamento.
 99. **Decoder NDEF não tinha cobertura unitária direta** — foram adicionados testes para Text RTD UTF-8, payload malformado, controles bidi e truncamento.
 100. **Artefatos de CI não carregavam checksum dentro do pacote** — a pipeline agora gera `SHA256SUMS.txt` para APK debug e release unsigned e publica junto dos artefatos.
+
+
+66. **Limite BLE não era realmente aplicado** — o mapa era indexado por `BluetoothDevice`, mas a remoção do item mais antigo tentava usar a chave textual exibida na UI. O limite de 128 dispositivos agora remove a chave real do mapa.
+67. **Estado GNSS raw podia permanecer “ativo” após stop/falha** — encerramento, exceções e desativação do provedor agora limpam `rawMeasurementsActive` sem apagar a informação separada de suporte do hardware.
+68. **Zero inicial era apresentado como leitura real de movimento** — aceleração e giroscópio agora distinguem stream registrado, primeira amostra recebida e indisponibilidade. A UI mostra “Aguardando” até existir dado real.
+69. **Falha de registro de giroscópio/magnetômetro/luz ficava invisível** — o estado de cada stream relevante agora registra se o listener foi realmente aceito pelo SensorManager.
+70. **NaN/Infinity do HAL podiam contaminar quaternion e Canvas 3D** — amostras não finitas são ignoradas antes de entrar no estado; normalização de quaternion/vetor também possui fallback finito coberto por testes.
