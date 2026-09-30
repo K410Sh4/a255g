@@ -14,9 +14,27 @@ object QuaternionMath {
     val Identity = Quaternion(1f, 0f, 0f, 0f)
 
     fun normalize(q: Quaternion): Quaternion {
-        val length = sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z)
-        if (length <= 0.000001f) return Identity
-        return Quaternion(q.w / length, q.x / length, q.y / length, q.z / length)
+        if (!q.w.isFinite() ||
+            !q.x.isFinite() ||
+            !q.y.isFinite() ||
+            !q.z.isFinite()
+        ) {
+            return Identity
+        }
+
+        val length = sqrt(
+            q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z,
+        )
+        if (!length.isFinite() || length <= 0.000001f) {
+            return Identity
+        }
+
+        return Quaternion(
+            q.w / length,
+            q.x / length,
+            q.y / length,
+            q.z / length,
+        )
     }
 
     fun conjugate(q: Quaternion): Quaternion =
