@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.5.1
+## Estado atual — v0.5.2
 
 Implementado:
 
@@ -17,7 +17,7 @@ Implementado:
 - NetworkCapabilities;
 - baseline CPU determinística;
 - inventário interno ampliado (build, ABI, kernel, tela, bateria, OpenGL ES e system features);
-- cópia automática do inventário completo para a área de transferência ao abrir/atualizar;
+- persistência automática do inventário em armazenamento privado; clipboard somente por ação explícita do usuário;
 - snapshot completo também salvo no armazenamento interno privado do app;
 - compartilhamento de relatório de capacidades;
 - CI para build debug/release, testes unitários, lint, compilação dos testes Android, execução smoke em emulador Android 16 e APKs.
@@ -75,14 +75,14 @@ Veja `docs/ARCHITECTURE.md`.
 O runner atual não disponibiliza `platforms;android-37` via SDK Manager. As bibliotecas Compose foram fixadas na linha 1.11.4 e Lifecycle 2.10.0, anteriores à migração transitiva para compileSdk 37, mantendo compile/target SDK 36 sem suprimir a validação de AAR metadata.
 
 
-## Inventário automático
+## Inventário interno
 
-Na inicialização e sempre que **Atualizar + copiar** é usado, o app:
+Na inicialização e sempre que **Atualizar** é usado, o app:
 
 1. coleta o snapshot do dispositivo, build, SoC/ABI, RAM/storage, tela, bateria/térmico, rede, NFC, sensores, Camera2 e `PackageManager.systemAvailableFeatures`;
 2. gera um relatório textual completo;
-3. copia o relatório para a área de transferência;
-4. salva uma cópia privada em `noBackupFilesDir/a25lab_last_internal_specs.txt`, fora do backup/transferência do Android.
+3. salva uma cópia privada em `noBackupFilesDir/a25lab_last_internal_specs.txt`, fora do backup/transferência do Android;
+4. mantém o clipboard intacto. O relatório só é copiado quando o usuário toca em **Copiar**.
 
 Por privacidade, o inventário não coleta IMEI, número de telefone, Android ID, contas, contatos, histórico de localização ou conteúdo pessoal.
 
@@ -176,3 +176,13 @@ Pontos dependentes do SM-A256E continuam marcados como validação física, não
 O projeto inclui `gradlew`, `gradlew.bat`, `gradle-wrapper.jar` oficial e `gradle-wrapper.properties` fixado no Gradle 9.8.0. A distribuição `gradle-9.8.0-bin.zip` possui SHA-256 pinado no wrapper, e a CI usa `gradle/actions/setup-gradle` com validação automática do JAR antes de executar qualquer build.
 
 Isso evita depender de uma instalação global de Gradle diferente entre máquinas.
+
+
+## Hardening crítico — v0.5.2
+
+- inventário não altera mais o clipboard automaticamente;
+- reinício do GNSS sempre encerra a sessão anterior antes de revalidar permissões;
+- ação pendente de permissão usa estado restaurável e sobrevive à recriação da Activity;
+- ausência de rede ativa é exibida como `N/D` em propriedades que não podem ser inferidas;
+- RMS de áudio remove offset DC antes de calcular dBFS;
+- fallback inicial da UI não presume que o dispositivo seja um Galaxy A25.

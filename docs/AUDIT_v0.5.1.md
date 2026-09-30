@@ -218,3 +218,18 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 138. **FFT assumia 44,1 kHz mesmo se AudioRecord negociasse outra taxa** — após abrir a rota, o analyzer usa `AudioRecord.sampleRate` real para a UI e para o cálculo da frequência dominante, mantendo 44,1 kHz apenas como taxa solicitada/fallback.
 139. **`availableProcessors()` era apresentado como contagem física de cores** — o relatório agora chama a métrica pelo que a API realmente fornece: processadores disponíveis à JVM no momento do snapshot.
 140. **Bandwidth desconhecido ganhou regressão no relatório** — teste unitário garante que zero/ausência de capacidade declarada seja exportado como `N/D`, não como throughput medido de 0 kbps.
+
+
+## Hardening crítico v0.5.2
+
+141. **Clipboard automático removido** — refresh/inicialização continuam persistindo o snapshot em `noBackupFilesDir`, mas não escrevem mais no clipboard. Copiar exige ação explícita do usuário.
+142. **Reentrada GNSS após revogação de permissão** — toda tentativa de `start()` encerra primeiro callbacks/listeners da sessão anterior; somente depois valida a permissão e inicia uma nova sessão.
+143. **Ação de permissão resistente à recriação da Activity** — a UI não guarda mais uma closure em `remember`; guarda um identificador restaurável com `rememberSaveable` e resolve a ação no retorno do Activity Result.
+144. **Rede ausente não equivale a capacidade negativa** — INTERNET, validação, portal cativo e metered mostram `N/D` quando não há rede ativa, tanto na UI quanto no relatório.
+145. **RMS com offset DC** — o nível dBFS passa a ser calculado sobre o componente AC do frame, removendo a média antes da energia, em alinhamento com o tratamento espectral.
+146. **Fallback de identidade do aparelho** — antes do probe, a Home mostra “Dispositivo Android” em vez de presumir “Galaxy A25”.
+
+Itens de governança ainda externos ao código:
+- proteger a branch `main` com checks obrigatórios;
+- integrar a PR somente após a CI do commit v0.5.2 ficar verde;
+- assinatura do APK de distribuição requer material de signing/segredos e não deve ser embutida no repositório.
