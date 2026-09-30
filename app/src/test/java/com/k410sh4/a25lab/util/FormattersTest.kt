@@ -5,6 +5,13 @@ import org.junit.Test
 
 class FormattersTest {
     @Test
+    fun glEsVersionName_decodesFeatureInfoEncoding() {
+        assertEquals("3.2", glEsVersionName(0x00030002))
+        assertEquals("2.0", glEsVersionName(0x00020000))
+        assertEquals("N/D", glEsVersionName(0))
+    }
+
+    @Test
     fun formatBytes_formatsBinaryUnits() {
         assertEquals("1.00 KiB", formatBytes(1024))
         assertEquals("1.00 MiB", formatBytes(1024L * 1024L))
