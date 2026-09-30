@@ -339,6 +339,7 @@ class AudioAnalyzer(private val context: Context) {
                     onState,
                     AudioState(
                         running = true,
+                        sampleReady = true,
                         rmsDbFs = dbFs.coerceAtLeast(-120f),
                         dominantFrequencyHz = dominant,
                         sampleRateHz = SAMPLE_RATE,

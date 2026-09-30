@@ -77,11 +77,6 @@ class MainActivity : ComponentActivity() {
                 ContextCompat.RECEIVER_EXPORTED,
             )
             nfcStateReceiverRegistered = true
-        }.onFailure { error ->
-            viewModel.reportNfcFailure(
-                operation = "Falha ao observar o estado NFC",
-                error = error,
-            )
         }
     }
 
@@ -100,7 +95,6 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        viewModel.clearNfcFailure()
         runCatching {
             nfcAdapter?.enableReaderMode(
                 this,
@@ -116,6 +110,8 @@ class MainActivity : ComponentActivity() {
                     NfcAdapter.FLAG_READER_NFC_BARCODE,
                 null,
             )
+        }.onSuccess {
+            viewModel.clearNfcFailure()
         }.onFailure { error ->
             viewModel.reportNfcFailure(
                 operation = "Falha ao ativar o Reader Mode",

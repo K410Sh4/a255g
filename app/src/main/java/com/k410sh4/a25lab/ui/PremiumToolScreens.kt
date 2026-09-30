@@ -116,18 +116,28 @@ fun PremiumGnssScreen(
         ) {
             HeroTile(
                 "Visíveis",
-                if (state.engineActive) state.satellitesVisible.toString() else "N/D",
+                when {
+                    !state.engineActive -> "N/D"
+                    !state.satelliteStatusReady -> "Aguardando…"
+                    else -> state.satellitesVisible.toString()
+                },
                 Modifier.weight(1f),
             )
             HeroTile(
                 "Usados no fix",
-                if (state.engineActive) state.satellitesUsed.toString() else "N/D",
+                when {
+                    !state.engineActive -> "N/D"
+                    !state.satelliteStatusReady -> "Aguardando…"
+                    else -> state.satellitesUsed.toString()
+                },
                 Modifier.weight(1f),
             )
         }
         HeroTile(
             "Medições brutas",
             when {
+                state.rawMeasurementsActive && !state.rawMeasurementSampleReady ->
+                    "Aguardando…"
                 state.rawMeasurementsActive ->
                     state.rawMeasurementCount.toString()
                 state.rawMeasurementsSupported == false ->
@@ -171,7 +181,11 @@ fun PremiumGnssScreen(
         )
         CompactFact(
             "Constelações",
-            state.constellations.joinToString().ifBlank { "N/D" },
+            when {
+                !state.engineActive -> "N/D"
+                !state.satelliteStatusReady -> "Aguardando…"
+                else -> state.constellations.joinToString().ifBlank { "Nenhuma" }
+            },
         )
         state.lastError?.let { ErrorMessage(it) }
         StartStopButtons(state.running, onStart, onStop)
@@ -249,10 +263,10 @@ fun PremiumAudioScreen(
     ToolPage(modifier, "PERCEPÇÃO", "Ouvido espectral", "Análise local do microfone em tempo real.") {
         HeroTile(
             "Frequência dominante",
-            if (state.running) {
-                String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz)
-            } else {
-                "N/D"
+            when {
+                !state.running -> "N/D"
+                !state.sampleReady -> "Aguardando…"
+                else -> String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz)
             },
             Modifier.fillMaxWidth(),
         )
@@ -262,10 +276,10 @@ fun PremiumAudioScreen(
         ) {
             HeroTile(
                 "Nível",
-                if (state.running) {
-                    String.format(Locale.US, "%.1f dBFS", state.rmsDbFs)
-                } else {
-                    "N/D"
+                when {
+                    !state.running -> "N/D"
+                    !state.sampleReady -> "Aguardando…"
+                    else -> String.format(Locale.US, "%.1f dBFS", state.rmsDbFs)
                 },
                 Modifier.weight(1f),
             )
@@ -411,8 +425,16 @@ fun PremiumNetworkScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            HeroTile("Down declarado", if (state.connected) "${state.downstreamKbps} kbps" else "N/D", Modifier.weight(1f))
-            HeroTile("Up declarado", if (state.connected) "${state.upstreamKbps} kbps" else "N/D", Modifier.weight(1f))
+            HeroTile(
+                "Down declarado",
+                if (state.connected && state.downstreamKbps > 0) "${state.downstreamKbps} kbps" else "N/D",
+                Modifier.weight(1f),
+            )
+            HeroTile(
+                "Up declarado",
+                if (state.connected && state.upstreamKbps > 0) "${state.upstreamKbps} kbps" else "N/D",
+                Modifier.weight(1f),
+            )
         }
         Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) {
             Text("Atualizar")

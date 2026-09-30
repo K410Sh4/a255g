@@ -50,6 +50,7 @@ class GnssRepository(private val context: Context) {
 
             update(
                 state.copy(
+                    satelliteStatusReady = true,
                     satellitesVisible = status.satelliteCount,
                     satellitesUsed = used,
                     constellations = constellations,
@@ -62,6 +63,7 @@ class GnssRepository(private val context: Context) {
         override fun onGnssMeasurementsReceived(eventArgs: GnssMeasurementsEvent) {
             update(
                 state.copy(
+                    rawMeasurementSampleReady = true,
                     rawMeasurementCount = eventArgs.measurements.size,
                 ),
             )
@@ -121,8 +123,10 @@ class GnssRepository(private val context: Context) {
             locationEnabled = true,
             gpsProviderEnabled = true,
             engineActive = false,
+            satelliteStatusReady = false,
             rawMeasurementsSupported = rawMeasurementsSupported,
             rawMeasurementsActive = false,
+            rawMeasurementSampleReady = false,
         )
         callback?.invoke(state)
 
@@ -138,6 +142,9 @@ class GnssRepository(private val context: Context) {
                     state.copy(
                         running = false,
                         engineActive = false,
+                        satelliteStatusReady = false,
+                        rawMeasurementsActive = false,
+                        rawMeasurementSampleReady = false,
                         lastError = "O Android recusou o callback de status GNSS.",
                     ),
                 )
@@ -187,7 +194,9 @@ class GnssRepository(private val context: Context) {
                     locationEnabled = true,
                     gpsProviderEnabled = gpsProviderEnabled,
                     engineActive = false,
+                    satelliteStatusReady = false,
                     rawMeasurementsActive = false,
+                    rawMeasurementSampleReady = false,
                     lastError = security.message ?: "Acesso GNSS negado.",
                 ),
             )
@@ -199,7 +208,9 @@ class GnssRepository(private val context: Context) {
                     locationEnabled = true,
                     gpsProviderEnabled = gpsProviderEnabled,
                     engineActive = false,
+                    satelliteStatusReady = false,
                     rawMeasurementsActive = false,
+                    rawMeasurementSampleReady = false,
                     lastError = error.message ?: "Falha ao iniciar GNSS.",
                 ),
             )
@@ -215,7 +226,9 @@ class GnssRepository(private val context: Context) {
                 state.copy(
                     running = false,
                     engineActive = false,
+                    satelliteStatusReady = false,
                     rawMeasurementsActive = false,
+                    rawMeasurementSampleReady = false,
                 ),
             )
         }
@@ -276,7 +289,9 @@ class GnssRepository(private val context: Context) {
                     locationEnabled = enabled,
                     gpsProviderEnabled = gpsEnabled,
                     engineActive = false,
+                    satelliteStatusReady = false,
                     rawMeasurementsActive = false,
+                    rawMeasurementSampleReady = false,
                     lastError = if (!enabled) {
                         "A localização do Android foi desativada."
                     } else {

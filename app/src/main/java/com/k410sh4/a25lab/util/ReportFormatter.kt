@@ -95,8 +95,8 @@ object ReportFormatter {
             appendLine("Portal cativo: ${yesNo(network.captivePortal)}")
             appendLine("Medida: ${yesNo(network.metered)}")
             appendLine("Transportes: ${network.transports.joinToString().ifBlank { "N/D" }}")
-            appendLine("Downstream declarado: ${network.downstreamKbps} kbps")
-            appendLine("Upstream declarado: ${network.upstreamKbps} kbps")
+            appendLine("Downstream declarado: ${if (network.connected && network.downstreamKbps > 0) "${network.downstreamKbps} kbps" else "N/D"}")
+            appendLine("Upstream declarado: ${if (network.connected && network.upstreamKbps > 0) "${network.upstreamKbps} kbps" else "N/D"}")
             network.lastError?.let { error ->
                 appendLine("Erro de leitura: ${safeLine(error)}")
             }

@@ -99,8 +99,10 @@ data class GnssState(
     val locationEnabled: Boolean? = null,
     val gpsProviderEnabled: Boolean? = null,
     val engineActive: Boolean = false,
+    val satelliteStatusReady: Boolean = false,
     val rawMeasurementsSupported: Boolean? = null,
     val rawMeasurementsActive: Boolean = false,
+    val rawMeasurementSampleReady: Boolean = false,
     val satellitesVisible: Int = 0,
     val satellitesUsed: Int = 0,
     val rawMeasurementCount: Int = 0,
@@ -144,6 +146,7 @@ data class CameraProbeResult(
 data class AudioState(
     val running: Boolean = false,
     val starting: Boolean = false,
+    val sampleReady: Boolean = false,
     val rmsDbFs: Float = -120f,
     val dominantFrequencyHz: Float = 0f,
     val sampleRateHz: Int = 44_100,
