@@ -142,6 +142,15 @@ object ReportFormatter {
                 }
                 appendLine()
             }
+
+            if (probeWarnings.isNotEmpty()) {
+                appendLine("[AVISOS DO PROBE]")
+                probeWarnings.forEach { warning ->
+                    appendLine("- ${safeLine(warning)}")
+                }
+                appendLine()
+            }
+
             appendLine("[SYSTEM FEATURES — ${systemFeatures.size}]")
             systemFeatures.forEach { feature ->
                 appendLine("- ${safeLine(feature.name)}${if (feature.version > 0) " (v${feature.version})" else ""}")
