@@ -55,7 +55,9 @@ fun Movement3DScreen(
         sensors.quaternionY,
         sensors.quaternionZ,
     ) {
-        if (sensors.orientationSampleReady && reference == null) {
+        if (!sensors.orientationSampleReady) {
+            reference = null
+        } else if (reference == null) {
             reference = QuaternionMath.normalize(current)
         }
     }
@@ -112,9 +114,21 @@ fun Movement3DScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    MetricBlock("Yaw", format(sensors.yawDeg, "°"), Modifier.weight(1f))
-                    MetricBlock("Pitch", format(sensors.pitchDeg, "°"), Modifier.weight(1f))
-                    MetricBlock("Roll", format(sensors.rollDeg, "°"), Modifier.weight(1f))
+                    MetricBlock(
+                        "Yaw",
+                        if (sensors.orientationSampleReady) format(sensors.yawDeg, "°") else "N/D",
+                        Modifier.weight(1f),
+                    )
+                    MetricBlock(
+                        "Pitch",
+                        if (sensors.orientationSampleReady) format(sensors.pitchDeg, "°") else "N/D",
+                        Modifier.weight(1f),
+                    )
+                    MetricBlock(
+                        "Roll",
+                        if (sensors.orientationSampleReady) format(sensors.rollDeg, "°") else "N/D",
+                        Modifier.weight(1f),
+                    )
                 }
 
                 OutlinedButton(
@@ -133,10 +147,14 @@ fun Movement3DScreen(
                 subtitle = "Resumo humano da aceleração e rotação detectadas.",
             ) {
                 Text(
-                    if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
-                        "Aceleração indisponível"
-                    } else {
-                        SuperpowerMath.motionLevel(
+                    when {
+                        sensors.accelerationSource == AccelerationSource.UNAVAILABLE ||
+                            !sensors.gyroscopeAvailable ->
+                            "Sensores de movimento incompletos"
+                        !sensors.accelerationSampleReady ||
+                            !sensors.gyroscopeSampleReady ->
+                            "Aguardando sensores…"
+                        else -> SuperpowerMath.motionLevel(
                             sensors.dynamicAccelerationMs2,
                             sensors.angularSpeedRadS,
                         )
@@ -151,16 +169,20 @@ fun Movement3DScreen(
                 ) {
                     MetricBlock(
                         "Aceleração dinâmica",
-                        if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
-                            "N/D"
-                        } else {
-                            format(sensors.dynamicAccelerationMs2, "m/s²")
+                        when {
+                            sensors.accelerationSource == AccelerationSource.UNAVAILABLE -> "N/D"
+                            !sensors.accelerationSampleReady -> "Aguardando"
+                            else -> format(sensors.dynamicAccelerationMs2, "m/s²")
                         },
                         Modifier.weight(1f),
                     )
                     MetricBlock(
                         "Velocidade angular",
-                        format(sensors.angularSpeedRadS, "rad/s"),
+                        when {
+                            !sensors.gyroscopeAvailable -> "N/D"
+                            !sensors.gyroscopeSampleReady -> "Aguardando"
+                            else -> format(sensors.angularSpeedRadS, "rad/s")
+                        },
                         Modifier.weight(1f),
                     )
                 }
@@ -184,6 +206,14 @@ fun Movement3DScreen(
                                 "Fallback |a| - g"
                             AccelerationSource.UNAVAILABLE ->
                                 "Indisponível"
+                        },
+                    )
+                    TechnicalFact(
+                        "Giroscópio",
+                        when {
+                            !sensors.gyroscopeAvailable -> "Não exposto"
+                            sensors.gyroscopeSampleReady -> "Ativo"
+                            else -> "Aguardando evento"
                         },
                     )
                     TechnicalFact(
@@ -245,34 +275,52 @@ fun EnvironmentScreen(
                 title = "Campo magnético 3D",
                 subtitle = "A esfera mostra direção e intensidade relativa do vetor medido.",
             ) {
-                MagneticField3D(
-                    x = sensors.magneticXUt,
-                    y = sensors.magneticYUt,
-                    z = sensors.magneticZUt,
-                    magnitude = sensors.magneticStrengthUt,
-                )
+                when {
+                    !sensors.magneticAvailable -> {
+                        Text(
+                            "Magnetômetro não exposto.",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    !sensors.magneticSampleReady -> {
+                        Text(
+                            "Aguardando primeira leitura do magnetômetro…",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    else -> {
+                        MagneticField3D(
+                            x = sensors.magneticXUt,
+                            y = sensors.magneticYUt,
+                            z = sensors.magneticZUt,
+                            magnitude = sensors.magneticStrengthUt,
+                        )
 
-                Text(
-                    format(sensors.magneticStrengthUt, "µT"),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "X ${f(sensors.magneticXUt)} · Y ${f(sensors.magneticYUt)} · Z ${f(sensors.magneticZUt)} µT",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                        Text(
+                            format(sensors.magneticStrengthUt, "µT"),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "X ${f(sensors.magneticXUt)} · Y ${f(sensors.magneticYUt)} · Z ${f(sensors.magneticZUt)} µT",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
 
-                TechnicalFact(
-                    "Calibração",
-                    SuperpowerMath.sensorAccuracyName(sensors.magneticAccuracy),
-                )
-                Text(
-                    "A seta usa o referencial do próprio aparelho. Use para observar variações; " +
-                        "ela não identifica sozinha a origem nem o material.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                        TechnicalFact(
+                            "Calibração",
+                            SuperpowerMath.sensorAccuracyName(sensors.magneticAccuracy),
+                        )
+                        Text(
+                            "A seta usa o referencial do próprio aparelho. Use para observar variações; " +
+                                "ela não identifica sozinha a origem nem o material.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
 
@@ -282,7 +330,11 @@ fun EnvironmentScreen(
                 subtitle = "Leitura do sensor principal e do canal Samsung CCT quando disponível.",
             ) {
                 Text(
-                    sensors.lightLux?.let { format(it, "lux") } ?: "Aguardando leitura…",
+                    when {
+                        !sensors.lightSensorAvailable -> "Não exposto"
+                        sensors.lightLux == null -> "Aguardando leitura…"
+                        else -> format(sensors.lightLux, "lux")
+                    },
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )

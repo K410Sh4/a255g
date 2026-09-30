@@ -186,37 +186,39 @@ fun MagneticField3D(
                 4f,
             )
 
-            val n = ThreeDMath.normalize(Vec3(x, y, z))
-            val projected = Offset(
-                x = (n.x - n.z * 0.62f) * radius * 0.92f,
-                y = (-n.y + n.z * 0.34f) * radius * 0.92f,
-            )
-            val tip = Offset(center.x + projected.x, center.y + projected.y)
+            if (magnitude > 0.0001f) {
+                val n = ThreeDMath.normalize(Vec3(x, y, z))
+                val projected = Offset(
+                    x = (n.x - n.z * 0.62f) * radius * 0.92f,
+                    y = (-n.y + n.z * 0.34f) * radius * 0.92f,
+                )
+                val tip = Offset(center.x + projected.x, center.y + projected.y)
 
-            val strengthScale = (magnitude / 100f).coerceIn(0f, 1f)
-            drawCircle(
-                color = primary.copy(alpha = 0.08f),
-                radius = radius * strengthScale,
-                center = center,
-            )
-            drawLine(
-                color = primary,
-                start = center,
-                end = tip,
-                strokeWidth = 10f,
-                cap = StrokeCap.Round,
-            )
-            drawCircle(
-                color = primary,
-                radius = 14f,
-                center = tip,
-            )
-            drawCircle(
-                color = primary.copy(alpha = 0.16f),
-                radius = 26f,
-                center = tip,
-                style = Stroke(width = 4f),
-            )
+                val strengthScale = (magnitude / 100f).coerceIn(0f, 1f)
+                drawCircle(
+                    color = primary.copy(alpha = 0.08f),
+                    radius = radius * strengthScale,
+                    center = center,
+                )
+                drawLine(
+                    color = primary,
+                    start = center,
+                    end = tip,
+                    strokeWidth = 10f,
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = primary,
+                    radius = 14f,
+                    center = tip,
+                )
+                drawCircle(
+                    color = primary.copy(alpha = 0.16f),
+                    radius = 26f,
+                    center = tip,
+                    style = Stroke(width = 4f),
+                )
+            }
         }
     }
 }

@@ -141,3 +141,9 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 85. **Benchmark CPU continuava após sair da tela ou enviar o app ao background** — o benchmark ganhou cancelamento cooperativo e geração de sessão. Navegação/background invalidam a execução em andamento e impedem publicação tardia de resultado.
 86. **Resultado de benchmark cancelado podia reaparecer depois da navegação** — a UI só aceita o resultado da geração de compute ainda ativa; cancelamentos não são apresentados como falha.
+
+
+87. **Estado “quase parado” aparecia antes da primeira amostra de movimento** — aceleração e giroscópio agora possuem prontidão independente. A classificação de movimento só é calculada depois que ambos realmente entregam dados.
+88. **Yaw/Pitch/Roll exibiam 0° enquanto o Rotation Vector ainda não tinha amostra** — os três campos agora mostram `N/D` até a primeira orientação real.
+89. **Referência 3D sobrevivia a uma suspensão de sensores** — quando `orientationSampleReady` volta a falso, a referência de recentralização é invalidada; o primeiro sample da nova sessão estabelece uma nova referência automaticamente.
+90. **Magnetômetro e luz não distinguiam ausência de hardware de espera por evento** — disponibilidade e primeira amostra passam a ser estados separados. A visualização magnética não desenha vetor/cabeça fictícios antes de uma leitura real.
