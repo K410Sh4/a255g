@@ -245,23 +245,49 @@ fun EnvironmentScreen(
                 title = "Campo magnético 3D",
                 subtitle = "A esfera mostra direção e intensidade relativa do vetor medido.",
             ) {
-                MagneticField3D(
-                    x = sensors.magneticXUt,
-                    y = sensors.magneticYUt,
-                    z = sensors.magneticZUt,
-                    magnitude = sensors.magneticStrengthUt,
-                )
+                if (sensors.magneticSampleReady) {
+                    MagneticField3D(
+                        x = sensors.magneticXUt,
+                        y = sensors.magneticYUt,
+                        z = sensors.magneticZUt,
+                        magnitude = sensors.magneticStrengthUt,
+                    )
 
-                Text(
-                    format(sensors.magneticStrengthUt, "µT"),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "X ${f(sensors.magneticXUt)} · Y ${f(sensors.magneticYUt)} · Z ${f(sensors.magneticZUt)} µT",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                    Text(
+                        format(sensors.magneticStrengthUt, "µT"),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "X ${f(sensors.magneticXUt)} · Y ${f(sensors.magneticYUt)} · Z ${f(sensors.magneticZUt)} µT",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.extraLarge,
+                    ) {
+                        Column(
+                            Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "Aguardando magnetômetro…",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "Zero ainda não é tratado como uma medição real.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
 
                 TechnicalFact(
                     "Calibração",
