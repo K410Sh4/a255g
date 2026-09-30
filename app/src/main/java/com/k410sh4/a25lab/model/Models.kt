@@ -91,6 +91,8 @@ data class MotionSample(
 data class GnssState(
     val running: Boolean = false,
     val locationEnabled: Boolean = true,
+    val gpsProviderEnabled: Boolean = false,
+    val engineActive: Boolean = false,
     val rawMeasurementsSupported: Boolean = false,
     val satellitesVisible: Int = 0,
     val satellitesUsed: Int = 0,

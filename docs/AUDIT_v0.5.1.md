@@ -79,3 +79,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 45. **Permissão de áudio podia ser revogada entre UI e executor** — a checagem feita antes de enfileirar a abertura não era suficiente para lint nem para uma revogação concorrente. O executor revalida `RECORD_AUDIO` imediatamente antes de tocar nas APIs protegidas.
 46. **Warnings de testes por APIs depreciadas** — o smoke test Compose migrou para a API junit4 v2 e o teste duplicado que exercitava o alias depreciado de aceleração foi removido.
+
+
+47. **GNSS podia permanecer passivo** — registrar `GnssStatus` e `GnssMeasurementsEvent` não garante que o receptor físico seja iniciado quando nenhum cliente de localização está ativo. O botão Iniciar agora cria uma solicitação GPS explícita, limitada à tela/foreground, enquanto as coordenadas retornadas são descartadas imediatamente.
+48. **Privacidade GNSS/NFC descrita de forma ampla demais** — o relatório agora diferencia inventário persistido de dados transitórios: coordenadas GNSS são descartadas e UID/NDEF de NFC não entram no inventário.

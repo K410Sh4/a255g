@@ -8,7 +8,10 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.GnssMeasurementsEvent
 import android.location.GnssStatus
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
+import android.location.LocationRequest
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.model.GnssState
 
@@ -17,6 +20,13 @@ class GnssRepository(private val context: Context) {
     private var callback: ((GnssState) -> Unit)? = null
     private var state = GnssState()
     private var locationReceiverRegistered = false
+
+    private val engineLocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            // Intencionalmente descartado. A25 Lab ativa o receptor para
+            // obter status/measurements, mas não armazena coordenadas.
+        }
+    }
 
     private val locationModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -59,11 +69,7 @@ class GnssRepository(private val context: Context) {
     }
 
     fun start(onState: (GnssState) -> Unit) {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!hasFineLocationPermission()) {
             onState(
                 GnssState(
                     lastError = "Permissão de localização precisa necessária.",
@@ -84,7 +90,23 @@ class GnssRepository(private val context: Context) {
             state = GnssState(
                 running = false,
                 locationEnabled = false,
+                gpsProviderEnabled = false,
                 lastError = "Ative a localização do Android para usar GNSS.",
+            )
+            callback?.invoke(state)
+            return
+        }
+
+        val gpsProviderEnabled = runCatching {
+            manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        }.getOrDefault(false)
+
+        if (!gpsProviderEnabled) {
+            state = GnssState(
+                running = false,
+                locationEnabled = true,
+                gpsProviderEnabled = false,
+                lastError = "O provedor GPS está indisponível ou desativado.",
             )
             callback?.invoke(state)
             return
@@ -95,14 +117,11 @@ class GnssRepository(private val context: Context) {
         }.getOrDefault(false)
 
         state = GnssState(
-            running = true,
+            running = false,
             locationEnabled = true,
+            gpsProviderEnabled = true,
+            engineActive = false,
             rawMeasurementsSupported = rawMeasurementsSupported,
-            lastError = if (rawMeasurementsSupported) {
-                null
-            } else {
-                "O chipset/firmware não anuncia suporte a medições GNSS brutas."
-            },
         )
         callback?.invoke(state)
 
@@ -111,6 +130,18 @@ class GnssRepository(private val context: Context) {
                 context.mainExecutor,
                 statusCallback,
             )
+
+            if (!statusRegistered) {
+                unregisterGnssCallbacks()
+                update(
+                    state.copy(
+                        running = false,
+                        engineActive = false,
+                        lastError = "O Android recusou o callback de status GNSS.",
+                    ),
+                )
+                return
+            }
 
             val measurementsRegistered = if (rawMeasurementsSupported) {
                 manager.registerGnssMeasurementsCallback(
@@ -121,27 +152,37 @@ class GnssRepository(private val context: Context) {
                 false
             }
 
-            if (!statusRegistered) {
-                unregisterGnssCallbacks()
-                update(
-                    state.copy(
-                        running = false,
-                        lastError = "O Android recusou o callback de status GNSS.",
-                    ),
-                )
-            } else if (rawMeasurementsSupported && !measurementsRegistered) {
-                update(
-                    state.copy(
-                        rawMeasurementsSupported = false,
-                        lastError = "O Android recusou o callback de medições GNSS brutas.",
-                    ),
-                )
-            }
+            val request = LocationRequest.Builder(1_000L)
+                .setMinUpdateIntervalMillis(1_000L)
+                .setQuality(LocationRequest.QUALITY_HIGH_ACCURACY)
+                .build()
+
+            manager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                request,
+                context.mainExecutor,
+                engineLocationListener,
+            )
+
+            update(
+                state.copy(
+                    running = true,
+                    engineActive = true,
+                    rawMeasurementsSupported =
+                        rawMeasurementsSupported && measurementsRegistered,
+                    lastError = when {
+                        rawMeasurementsSupported && !measurementsRegistered ->
+                            "O Android anunciou GNSS raw, mas recusou o callback de medições."
+                        else -> null
+                    },
+                ),
+            )
         } catch (security: SecurityException) {
             unregisterGnssCallbacks()
             update(
                 GnssState(
                     locationEnabled = true,
+                    gpsProviderEnabled = gpsProviderEnabled,
                     lastError = security.message ?: "Acesso GNSS negado.",
                 ),
             )
@@ -150,6 +191,7 @@ class GnssRepository(private val context: Context) {
             update(
                 GnssState(
                     locationEnabled = true,
+                    gpsProviderEnabled = gpsProviderEnabled,
                     lastError = error.message ?: "Falha ao iniciar GNSS.",
                 ),
             )
@@ -160,8 +202,13 @@ class GnssRepository(private val context: Context) {
         unregisterGnssCallbacks()
         unregisterLocationModeReceiver()
 
-        if (state.running) {
-            update(state.copy(running = false))
+        if (state.running || state.engineActive) {
+            update(
+                state.copy(
+                    running = false,
+                    engineActive = false,
+                ),
+            )
         }
         callback = null
     }
@@ -198,6 +245,11 @@ class GnssRepository(private val context: Context) {
                 measurementsCallback,
             )
         }
+        if (hasFineLocationPermission()) {
+            runCatching {
+                manager.removeUpdates(engineLocationListener)
+            }
+        }
     }
 
     private fun handleLocationModeChanged() {
@@ -205,16 +257,26 @@ class GnssRepository(private val context: Context) {
             manager.isLocationEnabled
         }.getOrDefault(false)
 
-        if (!enabled) {
+        val gpsEnabled = enabled && runCatching {
+            manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        }.getOrDefault(false)
+
+        if (!enabled || !gpsEnabled) {
             unregisterGnssCallbacks()
             update(
                 state.copy(
                     running = false,
-                    locationEnabled = false,
-                    lastError = "A localização do Android foi desativada.",
+                    locationEnabled = enabled,
+                    gpsProviderEnabled = gpsEnabled,
+                    engineActive = false,
+                    lastError = if (!enabled) {
+                        "A localização do Android foi desativada."
+                    } else {
+                        "O provedor GPS foi desativado."
+                    },
                 ),
             )
-        } else if (!state.locationEnabled) {
+        } else if (!state.engineActive) {
             val activeCallback = callback
             if (activeCallback != null) {
                 start(activeCallback)
@@ -222,6 +284,7 @@ class GnssRepository(private val context: Context) {
                 update(
                     state.copy(
                         locationEnabled = true,
+                        gpsProviderEnabled = true,
                         lastError = null,
                     ),
                 )
@@ -233,6 +296,12 @@ class GnssRepository(private val context: Context) {
         state = newState
         callback?.invoke(newState)
     }
+
+    private fun hasFineLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
 
     private fun constellationName(type: Int): String = when (type) {
         GnssStatus.CONSTELLATION_GPS -> "GPS"

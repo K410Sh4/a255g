@@ -126,6 +126,14 @@ fun PremiumGnssScreen(
             if (state.locationEnabled) "ativada" else "desativada",
         )
         CompactFact(
+            "Provedor GPS",
+            if (state.gpsProviderEnabled) "disponível" else "indisponível",
+        )
+        CompactFact(
+            "Receptor GNSS",
+            if (state.engineActive) "ativo" else "parado",
+        )
+        CompactFact(
             "GNSS raw anunciado",
             if (state.rawMeasurementsSupported) "sim" else "não",
         )
@@ -135,7 +143,7 @@ fun PremiumGnssScreen(
         )
         state.lastError?.let { ErrorMessage(it) }
         StartStopButtons(state.running, onStart, onStop)
-        HintText("Campos GNSS avançados dependem do chipset e firmware. O app não inventa medições ausentes.")
+        HintText("Ao iniciar, o app solicita GPS somente para manter o receptor ativo. Coordenadas recebidas são descartadas e não são armazenadas nem exibidas.")
     }
 }
 

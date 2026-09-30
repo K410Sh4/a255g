@@ -148,8 +148,10 @@ object ReportFormatter {
             appendLine()
 
             appendLine("[PRIVACIDADE]")
-            appendLine("Não coletado: IMEI, número de telefone, Android ID, contas, contatos, localização histórica ou conteúdo pessoal.")
-            appendLine("As informações acima são especificações/capacidades expostas por APIs públicas do Android.")
+            appendLine("Inventário não inclui: IMEI, número de telefone, Android ID, contas, contatos ou histórico de localização.")
+            appendLine("GNSS: quando iniciado, coordenadas podem ser entregues pela API apenas para manter o receptor ativo; são descartadas imediatamente e não entram no relatório.")
+            appendLine("NFC: UID/NDEF podem ser exibidos temporariamente na tela NFC; são descartados ao sair e não entram no inventário.")
+            appendLine("As informações do inventário são especificações/capacidades expostas por APIs públicas do Android.")
         }
     }
 
