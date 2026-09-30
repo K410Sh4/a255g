@@ -22,6 +22,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
 import com.k410sh4.a25lab.util.formatBytes
+import com.k410sh4.a25lab.ui.theme.A25LabTheme
 import com.k410sh4.a25lab.util.thermalStatusName
 import java.util.Locale
 
@@ -75,27 +78,45 @@ fun A25LabApp(viewModel: AppViewModel) {
         }
     }
 
-    MaterialTheme {
+    A25LabTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
+            val rootScreens = setOf(
+                Screen.Dashboard,
+                Screen.Perception,
+                Screen.Connectivity,
+                Screen.Lab,
+            )
+            val parent = parentScreen(viewModel.screen)
+
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text(viewModel.screen.title) },
+                        title = {
+                            if (viewModel.screen !in rootScreens) {
+                                Text(viewModel.screen.title)
+                            }
+                        },
                         navigationIcon = {
-                            if (viewModel.screen != Screen.Dashboard) {
-                                TextButton(onClick = { viewModel.navigate(Screen.Dashboard) }) {
+                            if (viewModel.screen !in rootScreens) {
+                                TextButton(onClick = { viewModel.navigate(parent) }) {
                                     Text("‹ Voltar")
                                 }
                             }
                         },
                     )
                 },
+                bottomBar = {
+                    PremiumBottomBar(
+                        current = viewModel.screen,
+                        onNavigate = viewModel::navigate,
+                    )
+                },
             ) { padding ->
-                BackHandler(enabled = viewModel.screen != Screen.Dashboard) {
-                    viewModel.navigate(Screen.Dashboard)
+                BackHandler(enabled = viewModel.screen !in rootScreens) {
+                    viewModel.navigate(parent)
                 }
                 when (viewModel.screen) {
-                    Screen.Dashboard -> DashboardScreen(
+                    Screen.Dashboard -> PremiumDashboardScreen(
                         modifier = Modifier.padding(padding),
                         device = viewModel.device,
                         copyStatus = viewModel.copyStatus,
@@ -111,28 +132,25 @@ fun A25LabApp(viewModel: AppViewModel) {
                             context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
                         },
                     )
-                    Screen.Superpowers -> SuperpowersScreen(
+                    Screen.Perception -> PerceptionHubScreen(
+                        modifier = Modifier.padding(padding),
+                        onNavigate = viewModel::navigate,
+                    )
+                    Screen.Connectivity -> ConnectivityHubScreen(
+                        modifier = Modifier.padding(padding),
+                        onNavigate = viewModel::navigate,
+                    )
+                    Screen.Lab -> LabHubScreen(
+                        modifier = Modifier.padding(padding),
+                        onNavigate = viewModel::navigate,
+                    )
+                    Screen.Superpowers -> Movement3DScreen(
                         modifier = Modifier.padding(padding),
                         sensors = viewModel.superpowers,
-                        ble = viewModel.ble,
-                        audio = viewModel.audio,
-                        onStartBle = {
-                            runWithPermissions(
-                                arrayOf(
-                                    Manifest.permission.BLUETOOTH_SCAN,
-                                    Manifest.permission.BLUETOOTH_CONNECT,
-                                ),
-                                viewModel::startBle,
-                            )
-                        },
-                        onStopBle = viewModel::stopBle,
-                        onStartAudio = {
-                            runWithPermissions(
-                                arrayOf(Manifest.permission.RECORD_AUDIO),
-                                viewModel::startAudio,
-                            )
-                        },
-                        onStopAudio = viewModel::stopAudio,
+                    )
+                    Screen.Environment -> EnvironmentScreen(
+                        modifier = Modifier.padding(padding),
+                        sensors = viewModel.superpowers,
                     )
                     Screen.Sensors -> SensorsScreen(
                         Modifier.padding(padding),
@@ -193,6 +211,62 @@ fun A25LabApp(viewModel: AppViewModel) {
             }
         }
     }
+}
+
+@Composable
+private fun PremiumBottomBar(
+    current: Screen,
+    onNavigate: (Screen) -> Unit,
+) {
+    val selectedRoot = parentScreen(current).takeIf {
+        it == Screen.Perception || it == Screen.Connectivity || it == Screen.Lab
+    } ?: if (current == Screen.Dashboard) Screen.Dashboard else parentScreen(current)
+
+    NavigationBar {
+        listOf(
+            Triple(Screen.Dashboard, "⌂", "Início"),
+            Triple(Screen.Perception, "◈", "Percepção"),
+            Triple(Screen.Connectivity, "⌁", "Conexões"),
+            Triple(Screen.Lab, "⌘", "Lab"),
+        ).forEach { (screen, icon, label) ->
+            NavigationBarItem(
+                selected = selectedRoot == screen,
+                onClick = { onNavigate(screen) },
+                icon = {
+                    Text(
+                        icon,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                label = { Text(label) },
+            )
+        }
+    }
+}
+
+private fun parentScreen(screen: Screen): Screen = when (screen) {
+    Screen.Superpowers,
+    Screen.Environment,
+    Screen.Audio,
+    Screen.Cameras,
+    -> Screen.Perception
+
+    Screen.Gnss,
+    Screen.Bluetooth,
+    Screen.Nfc,
+    Screen.Network,
+    -> Screen.Connectivity
+
+    Screen.Sensors,
+    Screen.Compute,
+    -> Screen.Lab
+
+    Screen.Dashboard,
+    Screen.Perception,
+    Screen.Connectivity,
+    Screen.Lab,
+    -> screen
 }
 
 @Composable

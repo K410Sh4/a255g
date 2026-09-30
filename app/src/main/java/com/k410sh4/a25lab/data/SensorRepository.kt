@@ -9,6 +9,8 @@ import com.k410sh4.a25lab.model.MotionSample
 import com.k410sh4.a25lab.model.SensorInfo
 import com.k410sh4.a25lab.model.SuperpowerSensorState
 import com.k410sh4.a25lab.model.sensorTypeName
+import com.k410sh4.a25lab.util.Quaternion
+import com.k410sh4.a25lab.util.QuaternionMath
 import com.k410sh4.a25lab.util.SuperpowerMath
 import kotlin.math.PI
 
@@ -28,6 +30,8 @@ class SensorRepository(context: Context) : SensorEventListener {
     private var lastSuperpowerPublishNs = 0L
     private val rotationMatrix = FloatArray(9)
     private val orientationRadians = FloatArray(3)
+    private val rotationQuaternion = FloatArray(4)
+    private var smoothedQuaternion = QuaternionMath.Identity
 
     fun listSensors(): List<SensorInfo> = manager.getSensorList(Sensor.TYPE_ALL)
         .sortedWith(compareBy<Sensor> { it.type }.thenBy { it.name })
@@ -71,6 +75,7 @@ class SensorRepository(context: Context) : SensorEventListener {
         stopMotion()
         superpowerCallback = onState
         lastSuperpowerPublishNs = 0L
+        smoothedQuaternion = QuaternionMath.Identity
 
         val allSensors = manager.getSensorList(Sensor.TYPE_ALL)
         val cct = allSensors.firstOrNull { it.stringType == CCT_STRING_TYPE }
@@ -177,10 +182,26 @@ class SensorRepository(context: Context) : SensorEventListener {
             event.sensor.type == Sensor.TYPE_ROTATION_VECTOR && values.size >= 3 -> {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, values)
                 SensorManager.getOrientation(rotationMatrix, orientationRadians)
+                SensorManager.getQuaternionFromVector(rotationQuaternion, values)
+                val rawQuaternion = Quaternion(
+                    w = rotationQuaternion[0],
+                    x = rotationQuaternion[1],
+                    y = rotationQuaternion[2],
+                    z = rotationQuaternion[3],
+                )
+                smoothedQuaternion = QuaternionMath.nlerp(
+                    smoothedQuaternion,
+                    rawQuaternion,
+                    0.35f,
+                )
                 latestSuperpower.copy(
                     yawDeg = radiansToDegrees(orientationRadians[0]),
                     pitchDeg = radiansToDegrees(orientationRadians[1]),
                     rollDeg = radiansToDegrees(orientationRadians[2]),
+                    quaternionW = smoothedQuaternion.w,
+                    quaternionX = smoothedQuaternion.x,
+                    quaternionY = smoothedQuaternion.y,
+                    quaternionZ = smoothedQuaternion.z,
                 )
             }
             event.sensor.stringType == CCT_STRING_TYPE && values.isNotEmpty() -> {

@@ -91,7 +91,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         screen = target
         when (target) {
             Screen.Sensors -> startMotion()
-            Screen.Superpowers -> startSuperpowers()
+            Screen.Superpowers,
+            Screen.Environment,
+            -> startSuperpowers()
             Screen.Network -> refreshNetwork()
             else -> Unit
         }
@@ -243,7 +245,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
 enum class Screen(val title: String) {
     Dashboard("A25 Lab"),
-    Superpowers("Superpoderes"),
+    Perception("Percepção"),
+    Connectivity("Conectividade"),
+    Lab("Laboratório"),
+    Superpowers("Movimento & 3D"),
+    Environment("Ambiente"),
     Sensors("Sensores"),
     Gnss("GNSS"),
     Bluetooth("Bluetooth LE"),
