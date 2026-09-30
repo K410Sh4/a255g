@@ -182,18 +182,24 @@ class GnssRepository(private val context: Context) {
         } catch (security: SecurityException) {
             unregisterGnssCallbacks()
             update(
-                GnssState(
+                state.copy(
+                    running = false,
                     locationEnabled = true,
                     gpsProviderEnabled = gpsProviderEnabled,
+                    engineActive = false,
+                    rawMeasurementsActive = false,
                     lastError = security.message ?: "Acesso GNSS negado.",
                 ),
             )
         } catch (error: RuntimeException) {
             unregisterGnssCallbacks()
             update(
-                GnssState(
+                state.copy(
+                    running = false,
                     locationEnabled = true,
                     gpsProviderEnabled = gpsProviderEnabled,
+                    engineActive = false,
+                    rawMeasurementsActive = false,
                     lastError = error.message ?: "Falha ao iniciar GNSS.",
                 ),
             )
@@ -209,6 +215,7 @@ class GnssRepository(private val context: Context) {
                 state.copy(
                     running = false,
                     engineActive = false,
+                    rawMeasurementsActive = false,
                 ),
             )
         }
@@ -269,6 +276,7 @@ class GnssRepository(private val context: Context) {
                     locationEnabled = enabled,
                     gpsProviderEnabled = gpsEnabled,
                     engineActive = false,
+                    rawMeasurementsActive = false,
                     lastError = if (!enabled) {
                         "A localização do Android foi desativada."
                     } else {
