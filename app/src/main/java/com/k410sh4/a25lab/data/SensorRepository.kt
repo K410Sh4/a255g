@@ -66,15 +66,27 @@ class SensorRepository(context: Context) : SensorEventListener {
     fun startMotion(onSample: (MotionSample) -> Unit) {
         stopMotion()
         motionCallback = onSample
-        latestMotion = MotionSample()
         lastMotionPublishNs = 0L
-        listOf(
+
+        val accelerometerActive = registerDefault(
             Sensor.TYPE_ACCELEROMETER,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
+        val gyroscopeActive = registerDefault(
             Sensor.TYPE_GYROSCOPE,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
+        val magnetometerActive = registerDefault(
             Sensor.TYPE_MAGNETIC_FIELD,
-        ).forEach { type ->
-            registerDefault(type, SensorManager.SENSOR_DELAY_GAME)
-        }
+            SensorManager.SENSOR_DELAY_GAME,
+        )
+
+        latestMotion = MotionSample(
+            accelerometerStreamActive = accelerometerActive,
+            gyroscopeStreamActive = gyroscopeActive,
+            magnetometerStreamActive = magnetometerActive,
+        )
+        onSample(latestMotion)
     }
 
     fun startSuperpowers(onState: (SuperpowerSensorState) -> Unit) {
@@ -174,16 +186,19 @@ class SensorRepository(context: Context) : SensorEventListener {
                 ax = values[0],
                 ay = values[1],
                 az = values[2],
+                accelerometerSampleReady = true,
             )
             Sensor.TYPE_GYROSCOPE -> latestMotion.copy(
                 gx = values[0],
                 gy = values[1],
                 gz = values[2],
+                gyroscopeSampleReady = true,
             )
             Sensor.TYPE_MAGNETIC_FIELD -> latestMotion.copy(
                 mx = values[0],
                 my = values[1],
                 mz = values[2],
+                magnetometerSampleReady = true,
             )
             else -> latestMotion
         }

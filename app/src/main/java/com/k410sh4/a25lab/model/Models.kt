@@ -80,12 +80,18 @@ data class MotionSample(
     val ax: Float = 0f,
     val ay: Float = 0f,
     val az: Float = 0f,
+    val accelerometerStreamActive: Boolean = false,
+    val accelerometerSampleReady: Boolean = false,
     val gx: Float = 0f,
     val gy: Float = 0f,
     val gz: Float = 0f,
+    val gyroscopeStreamActive: Boolean = false,
+    val gyroscopeSampleReady: Boolean = false,
     val mx: Float = 0f,
     val my: Float = 0f,
     val mz: Float = 0f,
+    val magnetometerStreamActive: Boolean = false,
+    val magnetometerSampleReady: Boolean = false,
 )
 
 data class GnssState(

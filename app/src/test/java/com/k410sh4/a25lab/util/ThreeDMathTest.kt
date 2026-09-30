@@ -6,6 +6,13 @@ import org.junit.Test
 
 class ThreeDMathTest {
     @Test
+    fun clampMagnitude2D_limitsProjectedVector() {
+        val result = ThreeDMath.clampMagnitude2D(3f, 4f, 2f)
+        assertEquals(1.2f, result.x, 0.0001f)
+        assertEquals(1.6f, result.y, 0.0001f)
+    }
+
+    @Test
     fun normalize_returnsUnitVector() {
         val result = ThreeDMath.normalize(Vec3(3f, 4f, 0f))
         assertEquals(0.6f, result.x, 0.0001f)

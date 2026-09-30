@@ -187,9 +187,10 @@ fun MagneticField3D(
             )
 
             val n = ThreeDMath.normalize(Vec3(x, y, z))
-            val projected = Offset(
-                x = (n.x - n.z * 0.62f) * radius * 0.92f,
-                y = (-n.y + n.z * 0.34f) * radius * 0.92f,
+            val projected = ThreeDMath.clampMagnitude2D(
+                x = (n.x - n.z * 0.62f) * radius,
+                y = (-n.y + n.z * 0.34f) * radius,
+                maxLength = radius * 0.92f,
             )
             val tip = Offset(center.x + projected.x, center.y + projected.y)
 

@@ -170,23 +170,30 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 105. **NaN/Infinity do HAL podiam contaminar quaternion e Canvas 3D** — amostras não finitas são ignoradas antes de entrar no estado; normalização de quaternion/vetor também possui fallback finito coberto por testes.
 
 
-101. **BLE dependia de broadcast que exige BLUETOOTH_CONNECT** — `ACTION_STATE_CHANGED` exige `BLUETOOTH_CONNECT` em Android moderno, enquanto o radar foi deliberadamente projetado com apenas `BLUETOOTH_SCAN`. A dependência foi removida; a manutenção da sessão verifica a disponibilidade real de `BluetoothLeScanner` e encerra o scan se o rádio desaparecer.
-102. **ReaderCallback NFC podia tocar estado do Compose fora da main thread** — a entrega da tag agora é serializada na thread principal antes de consultar lifecycle/tela; o parsing continua no executor NFC dedicado.
-103. **Benchmark continuava consumindo CPU fora da tela/background** — o benchmark agora coopera com interrupção, é mantido por `Future` e cancelado ao sair do Compute, enviar o app ao background ou limpar o ViewModel.
-104. **Executor NFC podia ser encerrado entre checagem e enqueue** — `RejectedExecutionException` passa a ser tratada sem crash.
-105. **Referência 3D sobrevivia à suspensão do stream** — quando a orientação fica indisponível, a referência é descartada e o primeiro sample da sessão seguinte volta a recentralizar a pose.
+106. **BLE dependia de broadcast que exige BLUETOOTH_CONNECT** — `ACTION_STATE_CHANGED` exige `BLUETOOTH_CONNECT` em Android moderno, enquanto o radar foi deliberadamente projetado com apenas `BLUETOOTH_SCAN`. A dependência foi removida; a manutenção da sessão verifica a disponibilidade real de `BluetoothLeScanner` e encerra o scan se o rádio desaparecer.
+107. **ReaderCallback NFC podia tocar estado do Compose fora da main thread** — a entrega da tag agora é serializada na thread principal antes de consultar lifecycle/tela; o parsing continua no executor NFC dedicado.
+108. **Benchmark continuava consumindo CPU fora da tela/background** — o benchmark agora coopera com interrupção, é mantido por `Future` e cancelado ao sair do Compute, enviar o app ao background ou limpar o ViewModel.
+109. **Executor NFC podia ser encerrado entre checagem e enqueue** — `RejectedExecutionException` passa a ser tratada sem crash.
+110. **Referência 3D sobrevivia à suspensão do stream** — quando a orientação fica indisponível, a referência é descartada e o primeiro sample da sessão seguinte volta a recentralizar a pose.
 
 
-106. **Solicitação concorrente de permissões podia sobrescrever a ação pendente** — a UI agora mantém um estado de requisição em andamento e ignora novos launches até a resposta do Android, evitando substituir a ação associada ao diálogo aberto.
-107. **Smoke test de navegação dependia de texto não único** — “Percepção” também aparece no conteúdo do dashboard. A navegação inferior ganhou tags semânticas estáveis de teste e o smoke test passou a usá-las.
-108. **Texto de ambiente ainda chamava o canal vendor de CCT validado** — a UI foi alinhada à auditoria: o canal permanece identificado como `light_cct` até sua semântica ser confirmada no SM-A256E.
+111. **Solicitação concorrente de permissões podia sobrescrever a ação pendente** — a UI agora mantém um estado de requisição em andamento e ignora novos launches até a resposta do Android, evitando substituir a ação associada ao diálogo aberto.
+112. **Smoke test de navegação dependia de texto não único** — “Percepção” também aparece no conteúdo do dashboard. A navegação inferior ganhou tags semânticas estáveis de teste e o smoke test passou a usá-las.
+113. **Texto de ambiente ainda chamava o canal vendor de CCT validado** — a UI foi alinhada à auditoria: o canal permanece identificado como `light_cct` até sua semântica ser confirmada no SM-A256E.
 
 
-109. **Cleanup BLE continha chamada órfã após simplificação do monitoramento** — chamadas para um receiver já removido permaneceram em stop/erro e quebravam compilação. O cleanup agora depende apenas do scanner + maintenance loop realmente existentes.
-110. **Conclusão antiga do benchmark podia sobrescrever uma execução nova** — cancelamento e reinício rápido agora usam geração monotônica; callbacks de uma execução obsoleta não podem zerar o estado nem apagar o Future da execução atual.
+114. **Cleanup BLE continha chamada órfã após simplificação do monitoramento** — chamadas para um receiver já removido permaneceram em stop/erro e quebravam compilação. O cleanup agora depende apenas do scanner + maintenance loop realmente existentes.
+115. **Conclusão antiga do benchmark podia sobrescrever uma execução nova** — cancelamento e reinício rápido agora usam geração monotônica; callbacks de uma execução obsoleta não podem zerar o estado nem apagar o Future da execução atual.
 
 
-111. **Callback BLE tardio podia repovoar estado após stop/erro** — callbacks entregues depois do encerramento agora são descartados quando `scanning=false`, evitando ressuscitar dispositivos ou manter referências da sessão.
-112. **Troca Movimento & 3D ↔ Ambiente reiniciava os mesmos sensores** — as telas irmãs agora compartilham a sessão já ativa, reduzindo flashes, resets e re-registro desnecessário no SensorManager.
-113. **Yaw/Pitch/Roll zerados pareciam medição real antes do primeiro sample** — as três métricas exibem “Aguardando” até existir Rotation Vector válido.
-114. **Receiver de estado NFC podia perder broadcast de app privilegiado do sistema** — o receiver dinâmico usa `RECEIVER_EXPORTED` somente para a ação de estado NFC; o código ignora dados não confiáveis do broadcast e relê o estado real via `NfcManager`.
+116. **Callback BLE tardio podia repovoar estado após stop/erro** — callbacks entregues depois do encerramento agora são descartados quando `scanning=false`, evitando ressuscitar dispositivos ou manter referências da sessão.
+117. **Troca Movimento & 3D ↔ Ambiente reiniciava os mesmos sensores** — as telas irmãs agora compartilham a sessão já ativa, reduzindo flashes, resets e re-registro desnecessário no SensorManager.
+118. **Yaw/Pitch/Roll zerados pareciam medição real antes do primeiro sample** — as três métricas exibem “Aguardando” até existir Rotation Vector válido.
+119. **Receiver de estado NFC podia perder broadcast de app privilegiado do sistema** — o receiver dinâmico usa `RECEIVER_EXPORTED` somente para a ação de estado NFC; o código ignora dados não confiáveis do broadcast e relê o estado real via `NfcManager`.
+
+
+120. **Tela de sensores brutos ainda confundia ausência com zero** — o laboratório geral agora distingue listener indisponível, aguardando primeira amostra e zero realmente medido.
+121. **Strings OEM eram sanitizadas no relatório, mas não na lista visual** — nome, vendor e string type dos sensores também passam pelo sanitizador de linha única.
+122. **Projeção magnética podia sair da esfera 3D** — o vetor oblíquo agora é limitado ao raio visual, com teste unitário.
+123. **FFT ignorava o bin de Nyquist** — a busca de pico inclui N/2 e possui regressão em 22,05 kHz.
+124. **Áudio/rede ainda exibiam valores configurados como leitura ativa** — fonte/sample rate ficam N/D fora de sessão e bandwidth declarado fica N/D sem rede ativa.

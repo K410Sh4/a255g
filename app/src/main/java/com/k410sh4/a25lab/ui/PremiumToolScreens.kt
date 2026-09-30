@@ -29,6 +29,7 @@ import com.k410sh4.a25lab.model.MotionSample
 import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
+import com.k410sh4.a25lab.util.DisplaySanitizer
 import com.k410sh4.a25lab.util.SuperpowerMath
 import java.util.Locale
 
@@ -54,9 +55,9 @@ fun PremiumSensorsScreen(
 
         item {
             ToolPanel("Leitura ao vivo") {
-                MetricLine("Acelerômetro", "${v3(motion.ax, motion.ay, motion.az)} m/s²")
-                MetricLine("Giroscópio", "${v3(motion.gx, motion.gy, motion.gz)} rad/s")
-                MetricLine("Magnetômetro", "${v3(motion.mx, motion.my, motion.mz)} µT")
+                MetricLine("Acelerômetro", motionVectorText(motion.accelerometerStreamActive, motion.accelerometerSampleReady, motion.ax, motion.ay, motion.az, "m/s²"))
+                MetricLine("Giroscópio", motionVectorText(motion.gyroscopeStreamActive, motion.gyroscopeSampleReady, motion.gx, motion.gy, motion.gz, "rad/s"))
+                MetricLine("Magnetômetro", motionVectorText(motion.magnetometerStreamActive, motion.magnetometerSampleReady, motion.mx, motion.my, motion.mz, "µT"))
             }
         }
 
@@ -72,12 +73,12 @@ fun PremiumSensorsScreen(
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                sensor.typeName,
+                                safeUiText(sensor.typeName),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                sensor.name,
+                                safeUiText(sensor.name),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -87,8 +88,8 @@ fun PremiumSensorsScreen(
                         }
                     }
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                    CompactFact("Fabricante", sensor.vendor)
-                    CompactFact("Tipo", "${sensor.type} · ${sensor.stringType.ifBlank { "N/D" }}")
+                    CompactFact("Fabricante", safeUiText(sensor.vendor))
+                    CompactFact("Tipo", "${sensor.type} · ${safeUiText(sensor.stringType.ifBlank { "N/D" })}")
                     CompactFact("Faixa", sensor.maxRange.toString())
                     CompactFact("Resolução", sensor.resolution.toString())
                     CompactFact("Delay mínimo", "${sensor.minDelayUs} µs")
@@ -270,13 +271,17 @@ fun PremiumAudioScreen(
             )
             HeroTile(
                 "Sample rate",
-                "${state.sampleRateHz} Hz",
+                if (state.running || state.starting) "${state.sampleRateHz} Hz" else "N/D",
                 Modifier.weight(1f),
             )
         }
         CompactFact(
             "Fonte de captura",
-            state.sourceLabel + if (state.fallbackUsed) " · fallback ativo" else "",
+            if (state.running || state.starting) {
+                state.sourceLabel + if (state.fallbackUsed) " · fallback ativo" else ""
+            } else {
+                "N/D"
+            },
         )
         if (state.starting) {
             HintText("Abrindo a rota de áudio fora da thread da interface…")
@@ -406,8 +411,8 @@ fun PremiumNetworkScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            HeroTile("Down", "${state.downstreamKbps} kbps", Modifier.weight(1f))
-            HeroTile("Up", "${state.upstreamKbps} kbps", Modifier.weight(1f))
+            HeroTile("Down declarado", if (state.connected) "${state.downstreamKbps} kbps" else "N/D", Modifier.weight(1f))
+            HeroTile("Up declarado", if (state.connected) "${state.upstreamKbps} kbps" else "N/D", Modifier.weight(1f))
         }
         Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) {
             Text("Atualizar")
@@ -646,6 +651,22 @@ private fun HintText(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+private fun motionVectorText(
+    active: Boolean,
+    ready: Boolean,
+    x: Float,
+    y: Float,
+    z: Float,
+    unit: String,
+): String = when {
+    !active -> "Indisponível"
+    !ready -> "Aguardando…"
+    else -> "${v3(x, y, z)} $unit"
+}
+
+private fun safeUiText(value: String): String =
+    DisplaySanitizer.safeSingleLine(value, 256)
 
 private fun v3(x: Float, y: Float, z: Float): String =
     String.format(Locale.US, "%.2f, %.2f, %.2f", x, y, z)

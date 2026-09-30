@@ -80,7 +80,7 @@ class FftAnalyzer(private val size: Int) {
 
         var bestBin = 0
         var bestMagnitudeSquared = 0.0
-        for (bin in 1 until size / 2) {
+        for (bin in 1..size / 2) {
             val magnitudeSquared =
                 real[bin] * real[bin] + imag[bin] * imag[bin]
             if (magnitudeSquared > bestMagnitudeSquared) {

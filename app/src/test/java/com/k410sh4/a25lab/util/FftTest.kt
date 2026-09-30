@@ -8,6 +8,13 @@ import kotlin.math.sin
 
 class FftTest {
     @Test
+    fun dominantFrequency_detectsNyquistBin() {
+        val samples = ShortArray(2048) { if (it % 2 == 0) 12_000 else -12_000 }
+        val detected = Fft.dominantFrequency(samples, 44_100)
+        assertEquals(22_050f, detected, 1f)
+    }
+
+    @Test
     fun dominantFrequency_detectsOneKhzTone() {
         val sampleRate = 8192
         val size = 2048

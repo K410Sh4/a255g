@@ -4,9 +4,19 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+data class Vec2(val x: Float, val y: Float)
 data class Vec3(val x: Float, val y: Float, val z: Float)
 
 object ThreeDMath {
+    fun clampMagnitude2D(x: Float, y: Float, maxLength: Float): Vec2 {
+        if (!x.isFinite() || !y.isFinite() || !maxLength.isFinite()) return Vec2(0f, 0f)
+        val limit = maxLength.coerceAtLeast(0f)
+        val length = sqrt(x * x + y * y)
+        if (length <= 0.000001f || length <= limit) return Vec2(x, y)
+        val scale = limit / length
+        return Vec2(x * scale, y * scale)
+    }
+
     fun rotateEuler(
         point: Vec3,
         yawRad: Float,
