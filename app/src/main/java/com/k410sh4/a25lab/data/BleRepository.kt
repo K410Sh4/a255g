@@ -1,11 +1,15 @@
 package com.k410sh4.a25lab.data
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
@@ -26,6 +30,24 @@ class BleRepository(private val context: Context) {
     private val adapter get() = bluetoothManager.adapter
     private var callback: ((BleState) -> Unit)? = null
     private var state = BleState()
+    private var adapterReceiverRegistered = false
+
+    private val adapterStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
+
+            val newState = intent.getIntExtra(
+                BluetoothAdapter.EXTRA_STATE,
+                BluetoothAdapter.ERROR,
+            )
+            if (
+                newState == BluetoothAdapter.STATE_TURNING_OFF ||
+                newState == BluetoothAdapter.STATE_OFF
+            ) {
+                finishScanWithError("Bluetooth foi desativado.")
+            }
+        }
+    }
     private val devices = linkedMapOf<BluetoothDevice, BleDeviceInfo>()
     private var nextSessionDeviceId = 0
     private var lastPublishElapsedMs = 0L
@@ -51,12 +73,9 @@ class BleRepository(private val context: Context) {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            maintenanceHandler.removeCallbacks(maintenanceRunnable)
-            state = state.copy(
-                scanning = false,
-                lastError = "Falha no scan BLE: código $errorCode",
+            finishScanWithError(
+                "Falha no scan BLE: código $errorCode",
             )
-            callback?.invoke(state)
         }
     }
 
@@ -88,9 +107,11 @@ class BleRepository(private val context: Context) {
                 callback?.invoke(state)
                 return
             }
+            registerAdapterStateReceiver()
             scanner.startScan(scanCallback)
             maintenanceHandler.postDelayed(maintenanceRunnable, 1_000L)
         } catch (security: SecurityException) {
+            unregisterAdapterStateReceiver()
             state = BleState(lastError = security.message ?: "Acesso Bluetooth negado.")
             callback?.invoke(state)
         }
@@ -100,6 +121,7 @@ class BleRepository(private val context: Context) {
 
     private fun stopInternal(clearCallback: Boolean) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
+        unregisterAdapterStateReceiver()
         try {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
         } catch (_: SecurityException) {
@@ -118,6 +140,49 @@ class BleRepository(private val context: Context) {
             devices.clear()
             state = state.copy(devices = emptyList())
         }
+    }
+
+    private fun finishScanWithError(message: String) {
+        maintenanceHandler.removeCallbacks(maintenanceRunnable)
+        unregisterAdapterStateReceiver()
+        runCatching {
+            adapter?.bluetoothLeScanner?.stopScan(scanCallback)
+        }
+
+        val visibleDevices = devices.values
+            .sortedByDescending { it.rssi }
+        state = state.copy(
+            scanning = false,
+            devices = visibleDevices,
+            lastError = message,
+        )
+        callback?.invoke(state)
+
+        devices.clear()
+        state = state.copy(devices = emptyList())
+    }
+
+    private fun registerAdapterStateReceiver() {
+        if (adapterReceiverRegistered) return
+
+        runCatching {
+            ContextCompat.registerReceiver(
+                context,
+                adapterStateReceiver,
+                IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            adapterReceiverRegistered = true
+        }
+    }
+
+    private fun unregisterAdapterStateReceiver() {
+        if (!adapterReceiverRegistered) return
+
+        runCatching {
+            context.unregisterReceiver(adapterStateReceiver)
+        }
+        adapterReceiverRegistered = false
     }
 
     private fun handleResult(result: ScanResult) {

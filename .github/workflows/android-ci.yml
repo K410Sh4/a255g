@@ -41,6 +41,16 @@ jobs:
       - name: Build, unit test, instrumentation compile and lint
         run: ./gradlew --no-daemon :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug --stacktrace
 
+      - name: Generate APK checksums
+        if: success()
+        shell: bash
+        run: |
+          cd app/build/outputs/apk
+          sha256sum \
+            debug/app-debug.apk \
+            release/app-release-unsigned.apk \
+            > SHA256SUMS.txt
+
       - name: Upload diagnostic reports
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -60,6 +70,7 @@ jobs:
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/release/app-release-unsigned.apk
+            app/build/outputs/apk/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
 

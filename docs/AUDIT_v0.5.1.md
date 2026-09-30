@@ -140,3 +140,11 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 83. **Avisos do probe eram passados ao formatter mas não exportados** — o ViewModel já acumulava falhas de sensores/rede/build, porém o relatório ignorava `probeWarnings`. O inventário agora inclui uma seção `[AVISOS DO PROBE]` sanitizada.
 84. **Falha manual de rede parecia simplesmente “sem rede”** — exceções do refresh manual eram convertidas silenciosamente em estado vazio. `NetworkState` agora carrega diagnóstico e a tela/relatório diferenciam falha de probe de ausência real de conexão.
 85. **Camera2 ainda podia persistir mensagens arbitrárias de exceção** — os erros por ID/global agora registram somente a classe da exceção, preservando diagnóstico sem copiar mensagens internas potencialmente sensíveis.
+
+
+86. **Estado NFC podia ficar desatualizado com Quick Settings** — ligar/desligar NFC sem pausar a Activity não garantia novo `onResume`. A Activity agora observa `ACTION_ADAPTER_STATE_CHANGED`, atualiza a UI e sincroniza Reader Mode em tempo real.
+87. **Scan BLE podia ficar marcado como ativo após desligar o Bluetooth** — o repositório agora observa `BluetoothAdapter.ACTION_STATE_CHANGED`, encerra scan/maintenance, publica erro legível e limpa referências internas da sessão.
+88. **Separadores Unicode U+2028/U+2029 escapavam da sanitização** — ambos passam a ser neutralizados como controles de layout, com regressão unitária.
+89. **NDEF grande era decodificado integralmente antes do limite visual** — o parser limita a janela de decodificação a 16 KiB, preserva limite visual de 4096 caracteres e indica truncamento.
+90. **Decoder NDEF não tinha cobertura unitária direta** — foram adicionados testes para Text RTD UTF-8, payload malformado, controles bidi e truncamento.
+91. **Artefatos de CI não carregavam checksum dentro do pacote** — a pipeline agora gera `SHA256SUMS.txt` para APK debug e release unsigned e publica junto dos artefatos.

@@ -28,6 +28,19 @@ class DisplaySanitizerTest {
     }
 
     @Test
+    fun safeText_escapesUnicodeLineSeparators() {
+        val result = DisplaySanitizer.safeText(
+            "A\u2028B\u2029C",
+            32,
+        )
+
+        assertTrue(result.contains("\\u2028"))
+        assertTrue(result.contains("\\u2029"))
+        assertFalse(result.contains('\u2028'))
+        assertFalse(result.contains('\u2029'))
+    }
+
+    @Test
     fun safeText_preservesZeroWidthJoinerForLegitimateEmoji() {
         val family = "👨‍👩‍👧"
         assertEquals(
