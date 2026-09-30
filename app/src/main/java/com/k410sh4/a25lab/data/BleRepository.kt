@@ -212,8 +212,12 @@ class BleRepository(private val context: Context) {
         )
 
         if (devices.size > MAX_DEVICES) {
-            val oldest = devices.minByOrNull { it.value.lastSeenElapsedMs }?.key
-            if (oldest != null) devices.remove(oldest)
+            val oldestDevice = devices
+                .minByOrNull { it.value.lastSeenElapsedMs }
+                ?.key
+            if (oldestDevice != null) {
+                devices.remove(oldestDevice)
+            }
         }
     }
 
