@@ -16,7 +16,7 @@ object NfcParser {
             val ndef = Ndef.get(tag) ?: return@runCatching null
             ndef.connect()
             try {
-                ndef.cachedNdefMessage?.records?.firstNotNullOfOrNull { record ->
+                ndef.ndefMessage?.records?.firstNotNullOfOrNull { record ->
                     decodeTextRecord(record.tnf, record.type, record.payload)
                 }
             } finally {

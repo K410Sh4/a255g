@@ -101,9 +101,18 @@ fun A25LabApp(viewModel: AppViewModel) {
                 },
             ) { padding ->
                 BackHandler(
-                    enabled = viewModel.screen !in rootScreens,
+                    enabled = viewModel.screen != Screen.Dashboard,
                 ) {
-                    viewModel.navigate(parent)
+                    val backTarget = if (
+                        viewModel.screen == Screen.Perception ||
+                        viewModel.screen == Screen.Connectivity ||
+                        viewModel.screen == Screen.Lab
+                    ) {
+                        Screen.Dashboard
+                    } else {
+                        parent
+                    }
+                    viewModel.navigate(backTarget)
                 }
 
                 when (viewModel.screen) {

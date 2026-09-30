@@ -120,7 +120,7 @@ class BleRepository(private val context: Context) {
         pruneStale(now)
 
         val record = result.scanRecord
-        val name = DisplaySanitizer.safeText(
+        val name = DisplaySanitizer.safeSingleLine(
             record?.deviceName ?: "Dispositivo BLE",
             maxCodePoints = 128,
         )

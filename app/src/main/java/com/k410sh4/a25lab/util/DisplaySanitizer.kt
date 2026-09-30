@@ -3,6 +3,17 @@ package com.k410sh4.a25lab.util
 import java.util.Locale
 
 object DisplaySanitizer {
+    fun safeSingleLine(
+        input: String,
+        maxCodePoints: Int,
+    ): String = safeText(
+        input = input,
+        maxCodePoints = maxCodePoints,
+    )
+        .replace('\n', ' ')
+        .replace('\r', ' ')
+        .replace('\t', ' ')
+
     fun safeText(
         input: String,
         maxCodePoints: Int,

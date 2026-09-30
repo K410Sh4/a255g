@@ -2,8 +2,10 @@ package com.k410sh4.a25lab.util
 
 import com.k410sh4.a25lab.model.CameraInfo
 import com.k410sh4.a25lab.model.DeviceSnapshot
+import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
 import com.k410sh4.a25lab.model.SystemFeatureInfo
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,6 +99,13 @@ class ReportFormatterTest {
             ),
             cameraProbeErrors = listOf("ID 2: probe parcial"),
             systemFeatures = listOf(SystemFeatureInfo("android.hardware.nfc", 0)),
+            nfc = NfcState(
+                available = true,
+                enabled = true,
+                lastTagIdHex = "DEADBEEF",
+                technologies = listOf("Ndef"),
+                ndefText = "SECRET-NDEF",
+            ),
         )
 
         assertTrue(report.contains("VDIS Gyroscope"))
@@ -106,6 +115,8 @@ class ReportFormatterTest {
         assertTrue(report.contains("Build fingerprint: fingerprint"))
         assertTrue(report.contains("Falhas parciais do Camera2 probe"))
         assertTrue(report.contains("ID 2: probe parcial"))
-        assertTrue(report.contains("Não coletado: IMEI"))
+        assertTrue(report.contains("Inventário não inclui: IMEI"))
+        assertFalse(report.contains("DEADBEEF"))
+        assertFalse(report.contains("SECRET-NDEF"))
     }
 }

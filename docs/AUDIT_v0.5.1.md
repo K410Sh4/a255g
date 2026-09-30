@@ -88,3 +88,9 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 49. **Texto vindo de rádio/NFC era tratado como confiável** — nomes BLE e NDEF são entradas externas e podiam carregar controles Unicode/bidi capazes de confundir a apresentação. Foi criado um sanitizador de display que preserva Unicode normal, torna controles perigosos visíveis e limita tamanho por code point.
 50. **Dados BLE transitórios permaneciam no ViewModel após sair** — nomes/RSSI agora são removidos ao deixar a tela Bluetooth ou enviar o app ao background. O scan pode ser retomado pela intenção do usuário, mas começa com estado visual limpo.
 51. **Estado NFC podia ficar desatualizado ao entrar na tela** — a disponibilidade/estado do adaptador é atualizada ao navegar para NFC, além da atualização no resume.
+
+
+52. **Teste de relatório ficou inconsistente após a correção de privacidade** — o teste ainda buscava a frase antiga “Não coletado: IMEI”. A asserção foi atualizada e ganhou regressão explícita garantindo que UID/NDEF transitórios não apareçam no inventário persistido.
+53. **Nome BLE podia usar quebras de linha para deformar a UI** — o sanitizador ganhou modo de linha única; nomes anunciados por dispositivos próximos agora removem newline/CR/tab sem perder Unicode legítimo.
+54. **NDEF conectado ainda usava snapshot cached** — depois de conectar à tag, a leitura passa a usar a mensagem NDEF atual em vez do cache do objeto Tag.
+55. **Botão Voltar do sistema nas categorias raiz encerrava o app** — Percepção, Conectividade e Laboratório agora voltam para Início; apenas Início mantém o comportamento padrão de sair.
