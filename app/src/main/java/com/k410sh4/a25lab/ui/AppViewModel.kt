@@ -120,6 +120,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun navigate(target: Screen) {
         if (screen == target) return
 
+        val superpowerScreens = setOf(
+            Screen.Superpowers,
+            Screen.Environment,
+        )
+        if (screen in superpowerScreens && target in superpowerScreens) {
+            screen = target
+            return
+        }
+
         val leavingNfc = screen == Screen.Nfc && target != Screen.Nfc
         val leavingBle =
             screen == Screen.Bluetooth && target != Screen.Bluetooth

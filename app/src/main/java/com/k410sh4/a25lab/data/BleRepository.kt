@@ -52,16 +52,19 @@ class BleRepository(private val context: Context) {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
+            if (!state.scanning) return
             handleResult(result)
             publishIfDue()
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>) {
+            if (!state.scanning) return
             results.forEach(::handleResult)
             publish()
         }
 
         override fun onScanFailed(errorCode: Int) {
+            if (!state.scanning) return
             finishScanWithError(
                 "Falha no scan BLE: código $errorCode",
             )

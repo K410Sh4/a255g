@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                 this,
                 nfcStateReceiver,
                 IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED),
-                ContextCompat.RECEIVER_NOT_EXPORTED,
+                ContextCompat.RECEIVER_EXPORTED,
             )
             nfcStateReceiverRegistered = true
         }

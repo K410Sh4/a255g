@@ -184,3 +184,9 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 109. **Cleanup BLE continha chamada órfã após simplificação do monitoramento** — chamadas para um receiver já removido permaneceram em stop/erro e quebravam compilação. O cleanup agora depende apenas do scanner + maintenance loop realmente existentes.
 110. **Conclusão antiga do benchmark podia sobrescrever uma execução nova** — cancelamento e reinício rápido agora usam geração monotônica; callbacks de uma execução obsoleta não podem zerar o estado nem apagar o Future da execução atual.
+
+
+111. **Callback BLE tardio podia repovoar estado após stop/erro** — callbacks entregues depois do encerramento agora são descartados quando `scanning=false`, evitando ressuscitar dispositivos ou manter referências da sessão.
+112. **Troca Movimento & 3D ↔ Ambiente reiniciava os mesmos sensores** — as telas irmãs agora compartilham a sessão já ativa, reduzindo flashes, resets e re-registro desnecessário no SensorManager.
+113. **Yaw/Pitch/Roll zerados pareciam medição real antes do primeiro sample** — as três métricas exibem “Aguardando” até existir Rotation Vector válido.
+114. **Receiver de estado NFC podia perder broadcast de app privilegiado do sistema** — o receiver dinâmico usa `RECEIVER_EXPORTED` somente para a ação de estado NFC; o código ignora dados não confiáveis do broadcast e relê o estado real via `NfcManager`.

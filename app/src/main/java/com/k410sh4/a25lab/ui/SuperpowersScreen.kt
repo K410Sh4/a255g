@@ -114,9 +114,33 @@ fun Movement3DScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    MetricBlock("Yaw", format(sensors.yawDeg, "°"), Modifier.weight(1f))
-                    MetricBlock("Pitch", format(sensors.pitchDeg, "°"), Modifier.weight(1f))
-                    MetricBlock("Roll", format(sensors.rollDeg, "°"), Modifier.weight(1f))
+                    MetricBlock(
+                        "Yaw",
+                        if (sensors.orientationSampleReady) {
+                            format(sensors.yawDeg, "°")
+                        } else {
+                            "Aguardando…"
+                        },
+                        Modifier.weight(1f),
+                    )
+                    MetricBlock(
+                        "Pitch",
+                        if (sensors.orientationSampleReady) {
+                            format(sensors.pitchDeg, "°")
+                        } else {
+                            "Aguardando…"
+                        },
+                        Modifier.weight(1f),
+                    )
+                    MetricBlock(
+                        "Roll",
+                        if (sensors.orientationSampleReady) {
+                            format(sensors.rollDeg, "°")
+                        } else {
+                            "Aguardando…"
+                        },
+                        Modifier.weight(1f),
+                    )
                 }
 
                 OutlinedButton(
@@ -316,7 +340,11 @@ fun EnvironmentScreen(
 
                 TechnicalFact(
                     "Calibração",
-                    SuperpowerMath.sensorAccuracyName(sensors.magneticAccuracy),
+                    if (sensors.magneticStreamActive) {
+                        SuperpowerMath.sensorAccuracyName(sensors.magneticAccuracy)
+                    } else {
+                        "Indisponível"
+                    },
                 )
                 Text(
                     "A seta usa o referencial do próprio aparelho. Use para observar variações; " +
