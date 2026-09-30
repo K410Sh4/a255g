@@ -16,7 +16,7 @@
 
     <application
         android:allowBackup="false"
-        android:hardwareAccelered="true"
+        android:hardwareAccelerated="true"
         android:label="A25 Lab"
         android:supportsRtl="true"
         android:theme="@style/Theme.A25Lab">
