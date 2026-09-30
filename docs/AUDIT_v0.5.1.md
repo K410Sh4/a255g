@@ -163,11 +163,11 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 100. **Artefatos de CI não carregavam checksum dentro do pacote** — a pipeline agora gera `SHA256SUMS.txt` para APK debug e release unsigned e publica junto dos artefatos.
 
 
-66. **Limite BLE não era realmente aplicado** — o mapa era indexado por `BluetoothDevice`, mas a remoção do item mais antigo tentava usar a chave textual exibida na UI. O limite de 128 dispositivos agora remove a chave real do mapa.
-67. **Estado GNSS raw podia permanecer “ativo” após stop/falha** — encerramento, exceções e desativação do provedor agora limpam `rawMeasurementsActive` sem apagar a informação separada de suporte do hardware.
-68. **Zero inicial era apresentado como leitura real de movimento** — aceleração e giroscópio agora distinguem stream registrado, primeira amostra recebida e indisponibilidade. A UI mostra “Aguardando” até existir dado real.
-69. **Falha de registro de giroscópio/magnetômetro/luz ficava invisível** — o estado de cada stream relevante agora registra se o listener foi realmente aceito pelo SensorManager.
-70. **NaN/Infinity do HAL podiam contaminar quaternion e Canvas 3D** — amostras não finitas são ignoradas antes de entrar no estado; normalização de quaternion/vetor também possui fallback finito coberto por testes.
+101. **Limite BLE não era realmente aplicado** — o mapa era indexado por `BluetoothDevice`, mas a remoção do item mais antigo tentava usar a chave textual exibida na UI. O limite de 128 dispositivos agora remove a chave real do mapa.
+102. **Estado GNSS raw podia permanecer “ativo” após stop/falha** — encerramento, exceções e desativação do provedor agora limpam `rawMeasurementsActive` sem apagar a informação separada de suporte do hardware.
+103. **Zero inicial era apresentado como leitura real de movimento** — aceleração e giroscópio agora distinguem stream registrado, primeira amostra recebida e indisponibilidade. A UI mostra “Aguardando” até existir dado real.
+104. **Falha de registro de giroscópio/magnetômetro/luz ficava invisível** — o estado de cada stream relevante agora registra se o listener foi realmente aceito pelo SensorManager.
+105. **NaN/Infinity do HAL podiam contaminar quaternion e Canvas 3D** — amostras não finitas são ignoradas antes de entrar no estado; normalização de quaternion/vetor também possui fallback finito coberto por testes.
 
 
 101. **BLE dependia de broadcast que exige BLUETOOTH_CONNECT** — `ACTION_STATE_CHANGED` exige `BLUETOOTH_CONNECT` em Android moderno, enquanto o radar foi deliberadamente projetado com apenas `BLUETOOTH_SCAN`. A dependência foi removida; a manutenção da sessão verifica a disponibilidade real de `BluetoothLeScanner` e encerra o scan se o rádio desaparecer.
@@ -175,3 +175,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 103. **Benchmark continuava consumindo CPU fora da tela/background** — o benchmark agora coopera com interrupção, é mantido por `Future` e cancelado ao sair do Compute, enviar o app ao background ou limpar o ViewModel.
 104. **Executor NFC podia ser encerrado entre checagem e enqueue** — `RejectedExecutionException` passa a ser tratada sem crash.
 105. **Referência 3D sobrevivia à suspensão do stream** — quando a orientação fica indisponível, a referência é descartada e o primeiro sample da sessão seguinte volta a recentralizar a pose.
+
+
+106. **Solicitação concorrente de permissões podia sobrescrever a ação pendente** — a UI agora mantém um estado de requisição em andamento e ignora novos launches até a resposta do Android, evitando substituir a ação associada ao diálogo aberto.
+107. **Smoke test de navegação dependia de texto não único** — “Percepção” também aparece no conteúdo do dashboard. A navegação inferior ganhou tags semânticas estáveis de teste e o smoke test passou a usá-las.
+108. **Texto de ambiente ainda chamava o canal vendor de CCT validado** — a UI foi alinhada à auditoria: o canal permanece identificado como `light_cct` até sua semântica ser confirmada no SM-A256E.

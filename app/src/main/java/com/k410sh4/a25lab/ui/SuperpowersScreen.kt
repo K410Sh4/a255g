@@ -330,7 +330,7 @@ fun EnvironmentScreen(
         item {
             PremiumPanel(
                 title = "Luz ambiente",
-                subtitle = "Leitura do sensor principal e do canal Samsung CCT quando disponível.",
+                subtitle = "Leitura do sensor principal e do canal vendor light_cct quando disponível.",
             ) {
                 Text(
                     when {

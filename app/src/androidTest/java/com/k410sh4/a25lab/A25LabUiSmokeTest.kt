@@ -2,7 +2,7 @@ package com.k410sh4.a25lab
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import org.junit.Rule
 import org.junit.Test
 
@@ -12,9 +12,9 @@ class A25LabUiSmokeTest {
 
     @Test
     fun dashboardShowsPrimaryNavigation() {
-        composeRule.onNodeWithText("Início").assertIsDisplayed()
-        composeRule.onNodeWithText("Percepção").assertIsDisplayed()
-        composeRule.onNodeWithText("Conexões").assertIsDisplayed()
-        composeRule.onNodeWithText("Lab").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-Dashboard").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-Perception").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-Connectivity").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-Lab").assertIsDisplayed()
     }
 }

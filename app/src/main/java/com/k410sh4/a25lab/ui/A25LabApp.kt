@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
@@ -36,14 +37,19 @@ fun A25LabApp(viewModel: AppViewModel) {
     var pendingPermissionAction by remember {
         mutableStateOf<(() -> Unit)?>(null)
     }
+    var permissionRequestInFlight by remember {
+        mutableStateOf(false)
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         // O módulo de destino valida a permissão novamente e produz um erro
         // legível se o usuário negou ou concedeu apenas acesso aproximado.
-        pendingPermissionAction?.invoke()
+        val action = pendingPermissionAction
         pendingPermissionAction = null
+        permissionRequestInFlight = false
+        action?.invoke()
     }
 
     fun runWithPermissions(
@@ -59,9 +65,15 @@ fun A25LabApp(viewModel: AppViewModel) {
 
         if (allGranted) {
             action()
-        } else {
+        } else if (!permissionRequestInFlight) {
             pendingPermissionAction = action
-            permissionLauncher.launch(permissions)
+            permissionRequestInFlight = true
+            runCatching {
+                permissionLauncher.launch(permissions)
+            }.onFailure {
+                pendingPermissionAction = null
+                permissionRequestInFlight = false
+            }
         }
     }
 
@@ -276,6 +288,7 @@ private fun PremiumBottomBar(
             Triple(Screen.Lab, "⌘", "Lab"),
         ).forEach { (screen, icon, label) ->
             NavigationBarItem(
+                modifier = Modifier.testTag("nav-${screen.name}"),
                 selected = selectedRoot == screen,
                 onClick = {
                     onNavigate(screen)
