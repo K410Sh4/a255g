@@ -36,12 +36,6 @@ class GnssRepository(private val context: Context) {
         override fun onGnssMeasurementsReceived(eventArgs: GnssMeasurementsEvent) {
             update(state.copy(rawMeasurementCount = eventArgs.measurements.size))
         }
-
-        override fun onStatusChanged(status: Int) {
-            if (status == GnssMeasurementsEvent.Callback.STATUS_NOT_SUPPORTED) {
-                update(state.copy(lastError = "Medições GNSS brutas não são suportadas pelo framework/firmware."))
-            }
-        }
     }
 
     fun start(onState: (GnssState) -> Unit) {
@@ -49,13 +43,25 @@ class GnssRepository(private val context: Context) {
             onState(GnssState(lastError = "Permissão de localização precisa necessária."))
             return
         }
+
         stop()
         callback = onState
-        state = GnssState(running = true)
+        val rawMeasurementsSupported = manager.gnssCapabilities.hasMeasurements()
+        state = GnssState(
+            running = true,
+            lastError = if (rawMeasurementsSupported) {
+                null
+            } else {
+                "O chipset/firmware não anuncia suporte a medições GNSS brutas."
+            },
+        )
         callback?.invoke(state)
+
         try {
             manager.registerGnssStatusCallback(context.mainExecutor, statusCallback)
-            manager.registerGnssMeasurementsCallback(context.mainExecutor, measurementsCallback)
+            if (rawMeasurementsSupported) {
+                manager.registerGnssMeasurementsCallback(context.mainExecutor, measurementsCallback)
+            }
         } catch (security: SecurityException) {
             update(GnssState(lastError = security.message ?: "Acesso GNSS negado."))
         } catch (error: RuntimeException) {
