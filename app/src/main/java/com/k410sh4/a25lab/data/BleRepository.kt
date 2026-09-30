@@ -6,6 +6,8 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.model.BleDeviceInfo
@@ -24,6 +26,15 @@ class BleRepository(private val context: Context) {
     private var state = BleState()
     private val devices = linkedMapOf<String, BleDeviceInfo>()
     private var lastPublishElapsedMs = 0L
+    private val maintenanceHandler = Handler(Looper.getMainLooper())
+    private val maintenanceRunnable = object : Runnable {
+        override fun run() {
+            if (!state.scanning) return
+            val changed = pruneStale(SystemClock.elapsedRealtime())
+            if (changed) publish()
+            maintenanceHandler.postDelayed(this, 1_000L)
+        }
+    }
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -59,16 +70,6 @@ class BleRepository(private val context: Context) {
             return
         }
 
-        val enabled = try {
-            currentAdapter.isEnabled
-        } catch (_: SecurityException) {
-            false
-        }
-        if (!enabled) {
-            onState(BleState(lastError = "Ative o Bluetooth para iniciar o scan."))
-            return
-        }
-
         stopInternal(clearCallback = false)
         devices.clear()
         lastPublishElapsedMs = 0L
@@ -78,11 +79,12 @@ class BleRepository(private val context: Context) {
         try {
             val scanner = currentAdapter.bluetoothLeScanner
             if (scanner == null) {
-                state = BleState(lastError = "Scanner BLE indisponível.")
+                state = BleState(lastError = "Bluetooth desligado ou scanner BLE indisponível.")
                 callback?.invoke(state)
                 return
             }
             scanner.startScan(scanCallback)
+            maintenanceHandler.postDelayed(maintenanceRunnable, 1_000L)
         } catch (security: SecurityException) {
             state = BleState(lastError = security.message ?: "Acesso Bluetooth negado.")
             callback?.invoke(state)
@@ -92,6 +94,7 @@ class BleRepository(private val context: Context) {
     fun stop() = stopInternal(clearCallback = true)
 
     private fun stopInternal(clearCallback: Boolean) {
+        maintenanceHandler.removeCallbacks(maintenanceRunnable)
         if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             try {
                 adapter?.bluetoothLeScanner?.stopScan(scanCallback)
@@ -133,14 +136,17 @@ class BleRepository(private val context: Context) {
         }
     }
 
-    private fun pruneStale(now: Long) {
+    private fun pruneStale(now: Long): Boolean {
+        var changed = false
         val iterator = devices.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (now - entry.value.lastSeenElapsedMs > STALE_DEVICE_MS) {
                 iterator.remove()
+                changed = true
             }
         }
+        return changed
     }
 
     private fun publishIfDue() {

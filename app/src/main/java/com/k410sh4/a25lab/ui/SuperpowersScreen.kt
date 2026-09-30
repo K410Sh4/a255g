@@ -107,10 +107,14 @@ fun Movement3DScreen(
                 subtitle = "Resumo humano da aceleração e rotação detectadas.",
             ) {
                 Text(
-                    SuperpowerMath.motionLevel(
-                        sensors.dynamicAccelerationMs2,
-                        sensors.angularSpeedRadS,
-                    ),
+                    if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
+                        "Aceleração indisponível"
+                    } else {
+                        SuperpowerMath.motionLevel(
+                            sensors.dynamicAccelerationMs2,
+                            sensors.angularSpeedRadS,
+                        )
+                    },
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )

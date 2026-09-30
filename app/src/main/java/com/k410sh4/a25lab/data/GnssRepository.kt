@@ -46,11 +46,18 @@ class GnssRepository(private val context: Context) {
         }
 
         override fun onStatusChanged(status: Int) {
-            if (status == STATUS_NOT_SUPPORTED) {
-                update(
+            when (status) {
+                STATUS_NOT_SUPPORTED -> update(
                     state.copy(
                         rawMeasurementsSupported = false,
                         lastError = "Medições GNSS brutas não são suportadas neste firmware.",
+                    ),
+                )
+                STATUS_LOCATION_DISABLED -> update(
+                    state.copy(
+                        running = false,
+                        locationEnabled = false,
+                        lastError = "A localização do Android foi desativada.",
                     ),
                 )
             }
@@ -120,6 +127,11 @@ class GnssRepository(private val context: Context) {
             }
 
             if (!statusRegistered) {
+                runCatching {
+                    manager.unregisterGnssMeasurementsCallback(
+                        measurementsCallback,
+                    )
+                }
                 update(
                     state.copy(
                         running = false,

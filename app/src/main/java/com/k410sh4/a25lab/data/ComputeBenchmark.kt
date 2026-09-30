@@ -36,6 +36,7 @@ class ComputeBenchmark {
         val c = FloatArray(size * size)
 
         repeat(warmupIterations) {
+            c.fill(0f)
             multiply(a, b, c, size)
         }
 
@@ -48,9 +49,13 @@ class ComputeBenchmark {
                 .coerceAtLeast(1L)
         }
 
-        val medianNs = samplesNs.sortedArray()[
-            samplesNs.size / 2
-        ]
+        val sortedNs = samplesNs.sortedArray()
+        val middle = sortedNs.size / 2
+        val medianNs = if (sortedNs.size % 2 == 1) {
+            sortedNs[middle]
+        } else {
+            (sortedNs[middle - 1] + sortedNs[middle]) / 2L
+        }
         val operations = 2.0 * size * size * size
         val gflops = operations / medianNs
         val checksum = c.asSequence()
@@ -73,7 +78,6 @@ class ComputeBenchmark {
         c: FloatArray,
         size: Int,
     ) {
-        c.fill(0f)
         for (i in 0 until size) {
             val row = i * size
             for (k in 0 until size) {

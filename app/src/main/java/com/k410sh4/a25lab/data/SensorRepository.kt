@@ -94,8 +94,13 @@ class SensorRepository(context: Context) : SensorEventListener {
             manager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         } == true
 
-        if (!usingLinearAccelerationSensor) {
-            registerDefault(Sensor.TYPE_ACCELEROMETER, SensorManager.SENSOR_DELAY_GAME)
+        val fallbackAccelerationRegistered = if (!usingLinearAccelerationSensor) {
+            registerDefault(
+                Sensor.TYPE_ACCELEROMETER,
+                SensorManager.SENSOR_DELAY_GAME,
+            )
+        } else {
+            false
         }
 
         val rotationRegistered = rotation?.let {
@@ -104,10 +109,13 @@ class SensorRepository(context: Context) : SensorEventListener {
 
         latestSuperpower = SuperpowerSensorState(
             orientationAvailable = rotationRegistered,
-            accelerationSource = if (usingLinearAccelerationSensor) {
-                AccelerationSource.LINEAR_SENSOR
-            } else {
-                AccelerationSource.ACCELEROMETER_FALLBACK
+            accelerationSource = when {
+                usingLinearAccelerationSensor ->
+                    AccelerationSource.LINEAR_SENSOR
+                fallbackAccelerationRegistered ->
+                    AccelerationSource.ACCELEROMETER_FALLBACK
+                else ->
+                    AccelerationSource.UNAVAILABLE
             },
             cctSensorAvailable = cct != null,
             aoisAvailable = aois != null,
