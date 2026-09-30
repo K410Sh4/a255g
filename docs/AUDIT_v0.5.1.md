@@ -168,3 +168,10 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 68. **Zero inicial era apresentado como leitura real de movimento** — aceleração e giroscópio agora distinguem stream registrado, primeira amostra recebida e indisponibilidade. A UI mostra “Aguardando” até existir dado real.
 69. **Falha de registro de giroscópio/magnetômetro/luz ficava invisível** — o estado de cada stream relevante agora registra se o listener foi realmente aceito pelo SensorManager.
 70. **NaN/Infinity do HAL podiam contaminar quaternion e Canvas 3D** — amostras não finitas são ignoradas antes de entrar no estado; normalização de quaternion/vetor também possui fallback finito coberto por testes.
+
+
+101. **BLE dependia de broadcast que exige BLUETOOTH_CONNECT** — `ACTION_STATE_CHANGED` exige `BLUETOOTH_CONNECT` em Android moderno, enquanto o radar foi deliberadamente projetado com apenas `BLUETOOTH_SCAN`. A dependência foi removida; a manutenção da sessão verifica a disponibilidade real de `BluetoothLeScanner` e encerra o scan se o rádio desaparecer.
+102. **ReaderCallback NFC podia tocar estado do Compose fora da main thread** — a entrega da tag agora é serializada na thread principal antes de consultar lifecycle/tela; o parsing continua no executor NFC dedicado.
+103. **Benchmark continuava consumindo CPU fora da tela/background** — o benchmark agora coopera com interrupção, é mantido por `Future` e cancelado ao sair do Compute, enviar o app ao background ou limpar o ViewModel.
+104. **Executor NFC podia ser encerrado entre checagem e enqueue** — `RejectedExecutionException` passa a ser tratada sem crash.
+105. **Referência 3D sobrevivia à suspensão do stream** — quando a orientação fica indisponível, a referência é descartada e o primeiro sample da sessão seguinte volta a recentralizar a pose.

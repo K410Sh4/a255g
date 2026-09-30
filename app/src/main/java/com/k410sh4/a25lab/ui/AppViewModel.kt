@@ -34,7 +34,10 @@ import com.k410sh4.a25lab.model.SuperpowerSensorState
 import com.k410sh4.a25lab.model.SystemFeatureInfo
 import com.k410sh4.a25lab.util.ReportFormatter
 import java.io.File
+import java.util.concurrent.CancellationException
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicLong
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -68,6 +71,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var bleRequested = false
     private var audioRequested = false
     private var pendingAutomaticReport: Pair<String, Boolean>? = null
+    private var computeFuture: Future<*>? = null
 
     var screen by mutableStateOf(Screen.Dashboard)
         private set
@@ -128,6 +132,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             (screen == Screen.Superpowers || screen == Screen.Environment) &&
                 target != Screen.Superpowers &&
                 target != Screen.Environment
+        val leavingCompute =
+            screen == Screen.Compute && target != Screen.Compute
+
+        if (leavingCompute) {
+            cancelCpuBaseline()
+        }
         stopLiveModules(clearUserRequests = true)
         if (leavingNfc) {
             nfcReadGeneration.incrementAndGet()
@@ -162,6 +172,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun onAppBackground() {
         inForeground = false
         nfcReadGeneration.incrementAndGet()
+        cancelCpuBaseline()
         stopLiveModules(clearUserRequests = false)
 
         ble = BleState()
@@ -399,20 +410,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val state = currentNfcState()
         val readGeneration = nfcReadGeneration.incrementAndGet()
 
-        nfcExecutor.execute {
-            val parsed = NfcParser.parse(
-                tag = tag,
-                available = state.available,
-                enabled = state.enabled,
-            )
-            post {
-                if (
-                    nfcReadGeneration.get() == readGeneration &&
-                    inForeground &&
-                    screen == Screen.Nfc
-                ) {
-                    nfc = parsed
+        try {
+            nfcExecutor.execute {
+                val parsed = NfcParser.parse(
+                    tag = tag,
+                    available = state.available,
+                    enabled = state.enabled,
+                )
+                post {
+                    if (
+                        nfcReadGeneration.get() == readGeneration &&
+                        inForeground &&
+                        screen == Screen.Nfc
+                    ) {
+                        nfc = parsed
+                    }
                 }
+            }
+        } catch (_: RejectedExecutionException) {
+            if (!cleared) {
+                nfc = nfc.copy(
+                    lastError = "Leitor NFC interno indisponível.",
+                )
             }
         }
     }
@@ -426,25 +445,41 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun runCpuBaseline() {
-        if (computeRunning) return
+        if (computeRunning || cleared) return
 
         computeRunning = true
         computeResult = null
         computeError = null
 
-        computeExecutor.execute {
-            val attempt = runCatching {
-                computeBenchmark.run()
-            }
-
-            post {
-                computeResult = attempt.getOrNull()
-                computeError = attempt.exceptionOrNull()?.let { error ->
-                    "Benchmark falhou: ${error::class.java.simpleName}"
+        try {
+            computeFuture = computeExecutor.submit {
+                val attempt = runCatching {
+                    computeBenchmark.run()
                 }
-                computeRunning = false
+
+                post {
+                    val error = attempt.exceptionOrNull()
+                    if (error !is CancellationException) {
+                        computeResult = attempt.getOrNull()
+                        computeError = error?.let {
+                            "Benchmark falhou: ${it::class.java.simpleName}"
+                        }
+                    }
+                    computeRunning = false
+                    computeFuture = null
+                }
             }
+        } catch (_: RejectedExecutionException) {
+            computeRunning = false
+            computeError = "Executor de benchmark indisponível."
         }
+    }
+
+    fun cancelCpuBaseline() {
+        computeFuture?.cancel(true)
+        computeFuture = null
+        computeRunning = false
+        computeError = null
     }
 
     fun report(): String = ReportFormatter.build(
@@ -463,6 +498,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = true)
         audioAnalyzer.close()
+        cancelCpuBaseline()
         ioExecutor.shutdownNow()
         nfcExecutor.shutdownNow()
         computeExecutor.shutdownNow()

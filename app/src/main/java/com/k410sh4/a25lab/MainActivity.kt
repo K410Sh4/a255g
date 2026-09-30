@@ -98,7 +98,11 @@ class MainActivity : ComponentActivity() {
         runCatching {
             nfcAdapter?.enableReaderMode(
                 this,
-                { tag -> viewModel.onNfcTag(tag) },
+                { tag ->
+                    runOnUiThread {
+                        viewModel.onNfcTag(tag)
+                    }
+                },
                 NfcAdapter.FLAG_READER_NFC_A or
                     NfcAdapter.FLAG_READER_NFC_B or
                     NfcAdapter.FLAG_READER_NFC_F or

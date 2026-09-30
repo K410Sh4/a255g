@@ -55,7 +55,9 @@ fun Movement3DScreen(
         sensors.quaternionY,
         sensors.quaternionZ,
     ) {
-        if (sensors.orientationSampleReady && reference == null) {
+        if (!sensors.orientationSampleReady) {
+            reference = null
+        } else if (reference == null) {
             reference = QuaternionMath.normalize(current)
         }
     }

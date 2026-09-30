@@ -1,6 +1,7 @@
 package com.k410sh4.a25lab.data
 
 import java.util.Random
+import java.util.concurrent.CancellationException
 
 class ComputeBenchmark {
     companion object {
@@ -25,6 +26,7 @@ class ComputeBenchmark {
         require(size in 32..512)
         require(warmupIterations in 0..5)
         require(measuredIterations in 1..9)
+        checkCancelled()
 
         val random = Random(25L)
         val a = FloatArray(size * size) {
@@ -36,12 +38,14 @@ class ComputeBenchmark {
         val c = FloatArray(size * size)
 
         repeat(warmupIterations) {
+            checkCancelled()
             c.fill(0f)
             multiply(a, b, c, size)
         }
 
         val samplesNs = LongArray(measuredIterations)
         repeat(measuredIterations) { iteration ->
+            checkCancelled()
             c.fill(0f)
             val start = System.nanoTime()
             multiply(a, b, c, size)
@@ -72,6 +76,12 @@ class ComputeBenchmark {
         )
     }
 
+    private fun checkCancelled() {
+        if (Thread.currentThread().isInterrupted) {
+            throw CancellationException("Benchmark cancelado.")
+        }
+    }
+
     private fun multiply(
         a: FloatArray,
         b: FloatArray,
@@ -79,6 +89,7 @@ class ComputeBenchmark {
         size: Int,
     ) {
         for (i in 0 until size) {
+            checkCancelled()
             val row = i * size
             for (k in 0 until size) {
                 val aik = a[row + k]

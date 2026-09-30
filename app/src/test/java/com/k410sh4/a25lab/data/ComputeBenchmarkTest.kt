@@ -1,10 +1,30 @@
 package com.k410sh4.a25lab.data
 
+import java.util.concurrent.CancellationException
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ComputeBenchmarkTest {
+    @Test
+    fun run_cancelsWhenThreadIsInterrupted() {
+        Thread.currentThread().interrupt()
+        try {
+            org.junit.Assert.assertThrows(
+                CancellationException::class.java,
+            ) {
+                ComputeBenchmark().run(
+                    size = 32,
+                    warmupIterations = 0,
+                    measuredIterations = 1,
+                )
+            }
+        } finally {
+            Thread.interrupted()
+        }
+    }
+
     @Test
     fun run_isDeterministicForSameInputs() {
         val benchmark = ComputeBenchmark()
