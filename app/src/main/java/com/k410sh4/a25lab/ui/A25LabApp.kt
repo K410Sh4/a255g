@@ -249,7 +249,6 @@ private fun parentScreen(screen: Screen): Screen = when (screen) {
     Screen.Superpowers,
     Screen.Environment,
     Screen.Audio,
-    Screen.Cameras,
     -> Screen.Perception
 
     Screen.Gnss,
@@ -259,6 +258,7 @@ private fun parentScreen(screen: Screen): Screen = when (screen) {
     -> Screen.Connectivity
 
     Screen.Sensors,
+    Screen.Cameras,
     Screen.Compute,
     -> Screen.Lab
 
