@@ -91,7 +91,12 @@ class BleRepository(private val context: Context) {
             scanner.startScan(scanCallback)
             maintenanceHandler.postDelayed(maintenanceRunnable, 1_000L)
         } catch (security: SecurityException) {
-            state = BleState(lastError = security.message ?: "Acesso Bluetooth negado.")
+            state = BleState(lastError = "Acesso Bluetooth negado.")
+            callback?.invoke(state)
+        } catch (error: RuntimeException) {
+            state = BleState(
+                lastError = "Falha ao iniciar BLE: ${error::class.java.simpleName}",
+            )
             callback?.invoke(state)
         }
     }
@@ -100,11 +105,11 @@ class BleRepository(private val context: Context) {
 
     private fun stopInternal(clearCallback: Boolean) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        try {
+        runCatching {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
-        } catch (_: SecurityException) {
-            // Cleanup best-effort: a permissão pode ter sido revogada.
         }
+        // Cleanup best-effort: a permissão ou o estado do adaptador
+        // podem mudar entre start e stop.
 
         if (state.scanning) {
             state = state.copy(
@@ -125,8 +130,11 @@ class BleRepository(private val context: Context) {
         pruneStale(now)
 
         val record = result.scanRecord
+        val rawName = record?.deviceName
+            ?.takeIf { it.isNotBlank() }
+            ?: "Dispositivo BLE"
         val name = DisplaySanitizer.safeSingleLine(
-            record?.deviceName ?: "Dispositivo BLE",
+            rawName,
             maxCodePoints = 128,
         )
         val device = result.device
