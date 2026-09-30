@@ -28,29 +28,29 @@ object ReportFormatter {
             appendLine()
 
             appendLine("[DISPOSITIVO / BUILD]")
-            appendLine("Fabricante: ${snapshot.manufacturer}")
-            appendLine("Marca: ${snapshot.brand}")
-            appendLine("Modelo: ${snapshot.model}")
-            appendLine("Device: ${snapshot.device}")
-            appendLine("Product: ${snapshot.product}")
-            appendLine("Board: ${snapshot.board}")
-            appendLine("Hardware: ${snapshot.hardware}")
-            appendLine("Bootloader: ${snapshot.bootloader}")
-            appendLine("Build ID: ${snapshot.buildId}")
-            appendLine("Build display: ${snapshot.buildDisplay}")
-            appendLine("Build fingerprint: ${snapshot.buildFingerprint}")
-            appendLine("Android: ${snapshot.androidRelease} / API ${snapshot.sdkInt}")
-            appendLine("Patch de segurança: ${snapshot.securityPatch}")
-            appendLine("Kernel: ${snapshot.kernelVersion}")
+            appendLine("Fabricante: ${safeLine(snapshot.manufacturer)}")
+            appendLine("Marca: ${safeLine(snapshot.brand)}")
+            appendLine("Modelo: ${safeLine(snapshot.model)}")
+            appendLine("Device: ${safeLine(snapshot.device)}")
+            appendLine("Product: ${safeLine(snapshot.product)}")
+            appendLine("Board: ${safeLine(snapshot.board)}")
+            appendLine("Hardware: ${safeLine(snapshot.hardware)}")
+            appendLine("Bootloader: ${safeLine(snapshot.bootloader)}")
+            appendLine("Build ID: ${safeLine(snapshot.buildId)}")
+            appendLine("Build display: ${safeLine(snapshot.buildDisplay)}")
+            appendLine("Build fingerprint: ${safeLine(snapshot.buildFingerprint)}")
+            appendLine("Android: ${safeLine(snapshot.androidRelease)} / API ${snapshot.sdkInt}")
+            appendLine("Patch de segurança: ${safeLine(snapshot.securityPatch)}")
+            appendLine("Kernel: ${safeLine(snapshot.kernelVersion)}")
             appendLine()
 
             appendLine("[SOC / CPU / ABI]")
-            appendLine("SoC: ${snapshot.socManufacturer} ${snapshot.socModel}")
+            appendLine("SoC: ${safeLine(snapshot.socManufacturer)} ${safeLine(snapshot.socModel)}")
             appendLine("CPU cores lógicos: ${snapshot.cpuCores}")
-            appendLine("ABIs: ${snapshot.supportedAbis.joinToString().ifBlank { "N/D" }}")
-            appendLine("ABIs 32-bit: ${snapshot.supported32BitAbis.joinToString().ifBlank { "nenhuma" }}")
-            appendLine("ABIs 64-bit: ${snapshot.supported64BitAbis.joinToString().ifBlank { "nenhuma" }}")
-            appendLine("OpenGL ES: ${snapshot.glEsVersion}")
+            appendLine("ABIs: ${safeLine(snapshot.supportedAbis.joinToString().ifBlank { "N/D" })}")
+            appendLine("ABIs 32-bit: ${safeLine(snapshot.supported32BitAbis.joinToString().ifBlank { "nenhuma" })}")
+            appendLine("ABIs 64-bit: ${safeLine(snapshot.supported64BitAbis.joinToString().ifBlank { "nenhuma" })}")
+            appendLine("OpenGL ES: ${safeLine(snapshot.glEsVersion)}")
             appendLine()
 
             appendLine("[MEMÓRIA / PARTIÇÃO DE DADOS]")
@@ -71,7 +71,7 @@ object ReportFormatter {
             appendLine("Bateria: ${snapshot.batteryLevelPercent?.let { "$it%" } ?: "N/D"}")
             appendLine("Temperatura: ${snapshot.batteryTemperatureC?.let { String.format(Locale.US, "%.1f °C", it) } ?: "N/D"}")
             appendLine("Tensão: ${snapshot.batteryVoltageMv?.let { "$it mV" } ?: "N/D"}")
-            appendLine("Tecnologia: ${snapshot.batteryTechnology ?: "N/D"}")
+            appendLine("Tecnologia: ${safeLine(snapshot.batteryTechnology ?: "N/D")}")
             appendLine("Saúde: ${batteryHealthName(snapshot.batteryHealth)}")
             appendLine("Estado: ${batteryStatusName(snapshot.batteryStatus)}")
             appendLine("Status térmico: ${thermalStatusName(snapshot.thermalStatus)}")
@@ -101,11 +101,11 @@ object ReportFormatter {
 
             appendLine("[SENSORES — ${sensors.size}]")
             sensors.forEachIndexed { index, sensor ->
-                appendLine("#${index + 1} ${sensor.typeName}")
-                appendLine("  Nome: ${sensor.name}")
-                appendLine("  Fabricante: ${sensor.vendor}")
+                appendLine("#${index + 1} ${safeLine(sensor.typeName)}")
+                appendLine("  Nome: ${safeLine(sensor.name)}")
+                appendLine("  Fabricante: ${safeLine(sensor.vendor)}")
                 appendLine("  Tipo numérico: ${sensor.type}")
-                appendLine("  String type: ${sensor.stringType.ifBlank { "N/D" }}")
+                appendLine("  String type: ${safeLine(sensor.stringType.ifBlank { "N/D" })}")
                 appendLine("  Versão: ${sensor.version}")
                 appendLine("  Resolução: ${sensor.resolution}")
                 appendLine("  Faixa máxima: ${sensor.maxRange}")
@@ -123,28 +123,28 @@ object ReportFormatter {
 
             appendLine("[CÂMERAS — ${cameras.size} lidas / ${snapshot.cameraCount} IDs]")
             cameras.forEach { camera ->
-                appendLine("ID ${camera.id} — ${camera.facing}")
-                appendLine("  Hardware level: ${camera.hardwareLevel}")
-                appendLine("  Pixel array: ${camera.pixelArray}")
-                appendLine("  Maior JPEG: ${camera.maxJpeg}")
+                appendLine("ID ${safeLine(camera.id)} — ${safeLine(camera.facing)}")
+                appendLine("  Hardware level: ${safeLine(camera.hardwareLevel)}")
+                appendLine("  Pixel array: ${safeLine(camera.pixelArray)}")
+                appendLine("  Maior JPEG: ${safeLine(camera.maxJpeg)}")
                 appendLine("  RAW: ${yesNo(camera.rawSupported)}")
                 appendLine("  Manual sensor: ${yesNo(camera.manualSensor)}")
                 appendLine("  Manual pós-processamento: ${yesNo(camera.manualPostProcessing)}")
                 appendLine("  Logical multi-camera: ${yesNo(camera.logicalMultiCamera)}")
-                appendLine("  OIS modes: ${camera.oisModes.joinToString().ifBlank { "não exposto" }}")
+                appendLine("  OIS modes: ${safeLine(camera.oisModes.joinToString().ifBlank { "não exposto" })}")
             }
             appendLine()
 
             if (cameraProbeErrors.isNotEmpty()) {
                 appendLine("Falhas parciais do Camera2 probe:")
                 cameraProbeErrors.forEach { error ->
-                    appendLine("  - $error")
+                    appendLine("  - ${safeLine(error)}")
                 }
                 appendLine()
             }
             appendLine("[SYSTEM FEATURES — ${systemFeatures.size}]")
             systemFeatures.forEach { feature ->
-                appendLine("- ${feature.name}${if (feature.version > 0) " (v${feature.version})" else ""}")
+                appendLine("- ${safeLine(feature.name)}${if (feature.version > 0) " (v${feature.version})" else ""}")
             }
             appendLine()
 
@@ -155,6 +155,12 @@ object ReportFormatter {
             appendLine("As informações do inventário são especificações/capacidades expostas por APIs públicas do Android.")
         }
     }
+
+    private fun safeLine(value: String): String =
+        DisplaySanitizer.safeSingleLine(
+            input = value,
+            maxCodePoints = 512,
+        )
 
     private fun yesNo(value: Boolean) = if (value) "sim" else "não"
 
