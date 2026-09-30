@@ -90,20 +90,16 @@ fun A25LabApp(viewModel: AppViewModel) {
 
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = {
-                            if (viewModel.screen !in rootScreens) {
-                                Text(viewModel.screen.title)
-                            }
-                        },
-                        navigationIcon = {
-                            if (viewModel.screen !in rootScreens) {
+                    if (viewModel.screen !in rootScreens) {
+                        TopAppBar(
+                            title = { Text(viewModel.screen.title) },
+                            navigationIcon = {
                                 TextButton(onClick = { viewModel.navigate(parent) }) {
                                     Text("‹ Voltar")
                                 }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                 },
                 bottomBar = {
                     PremiumBottomBar(
