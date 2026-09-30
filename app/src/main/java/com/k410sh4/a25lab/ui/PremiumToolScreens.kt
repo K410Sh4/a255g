@@ -409,17 +409,23 @@ fun PremiumNetworkScreen(
         )
         CompactFact(
             "Capacidade INTERNET",
-            if (state.internetCapability) "declarada" else "não declarada",
+            if (!state.connected) "N/D"
+            else if (state.internetCapability) "declarada" else "não declarada",
         )
         CompactFact(
             "Rede validada",
-            if (state.validated) "sim" else "não",
+            if (!state.connected) "N/D"
+            else if (state.validated) "sim" else "não",
         )
         CompactFact(
             "Portal cativo",
-            if (state.captivePortal) "detectado" else "não detectado",
+            if (!state.connected) "N/D"
+            else if (state.captivePortal) "detectado" else "não detectado",
         )
-        CompactFact("Medida", if (state.metered) "sim" else "não")
+        CompactFact(
+            "Medida",
+            if (!state.connected) "N/D" else if (state.metered) "sim" else "não",
+        )
         state.lastError?.let { ErrorMessage(it) }
         Row(
             modifier = Modifier.fillMaxWidth(),

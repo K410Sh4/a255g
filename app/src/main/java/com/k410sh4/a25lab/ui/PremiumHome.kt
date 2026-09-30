@@ -69,7 +69,7 @@ fun PremiumDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        device?.let { "${it.manufacturer} ${it.model}" } ?: "Galaxy A25",
+                        device?.let { "${it.manufacturer} ${it.model}" } ?: "Dispositivo Android",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
