@@ -3,6 +3,7 @@ package com.k410sh4.a25lab.util
 import com.k410sh4.a25lab.model.CameraInfo
 import com.k410sh4.a25lab.model.DeviceSnapshot
 import com.k410sh4.a25lab.model.NfcState
+import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.SensorInfo
 import com.k410sh4.a25lab.model.SystemFeatureInfo
 import org.junit.Assert.assertFalse
@@ -61,7 +62,7 @@ class ReportFormatterTest {
             systemFeatureCount = 1,
         )
         val sensor = SensorInfo(
-            name = "VDIS Gyroscope",
+            name = "VDIS Gyroscope\nInjected",
             vendor = "Samsung Inc.",
             type = 65607,
             stringType = "com.samsung.sensor.vdis_gyro",
@@ -100,6 +101,9 @@ class ReportFormatterTest {
             cameraProbeErrors = listOf("ID 2: probe parcial"),
             probeWarnings = listOf("Rede: IllegalStateException"),
             systemFeatures = listOf(SystemFeatureInfo("android.hardware.nfc", 0)),
+            network = NetworkState(
+                lastError = "Rede: IllegalStateException",
+            ),
             nfc = NfcState(
                 available = true,
                 enabled = true,
@@ -109,7 +113,8 @@ class ReportFormatterTest {
             ),
         )
 
-        assertTrue(report.contains("VDIS Gyroscope"))
+        assertTrue(report.contains("VDIS Gyroscope Injected"))
+        assertFalse(report.contains("\nInjected"))
         assertTrue(report.contains("Delay mínimo: 1000 µs"))
         assertTrue(report.contains("String type: com.samsung.sensor.vdis_gyro"))
         assertTrue(report.contains("android.hardware.nfc"))
@@ -118,6 +123,7 @@ class ReportFormatterTest {
         assertTrue(report.contains("ID 2: probe parcial"))
         assertTrue(report.contains("[AVISOS DO PROBE]"))
         assertTrue(report.contains("Rede: IllegalStateException"))
+        assertTrue(report.contains("Erro de leitura: Rede: IllegalStateException"))
         assertTrue(report.contains("Inventário não inclui: IMEI"))
         assertFalse(report.contains("DEADBEEF"))
         assertFalse(report.contains("SECRET-NDEF"))
