@@ -121,5 +121,5 @@ class HardwareProbe(private val context: Context) {
             .sortedBy { it.name }
 
     private fun featureName(feature: FeatureInfo): String =
-        feature.name ?: "OpenGL ES ${glEsVersionName(feature.glEsVersion)}"
+        feature.name ?: "OpenGL ES ${glEsVersionName(feature.reqGlEsVersion)}"
 }
