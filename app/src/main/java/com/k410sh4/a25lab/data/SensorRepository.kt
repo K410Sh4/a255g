@@ -108,6 +108,19 @@ class SensorRepository(context: Context) : SensorEventListener {
             manager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         } == true
 
+        val angularRegistered = registerDefault(
+            Sensor.TYPE_GYROSCOPE,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
+        val magneticRegistered = registerDefault(
+            Sensor.TYPE_MAGNETIC_FIELD,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
+        val lightRegistered = registerDefault(
+            Sensor.TYPE_LIGHT,
+            SensorManager.SENSOR_DELAY_NORMAL,
+        )
+
         latestSuperpower = SuperpowerSensorState(
             orientationAvailable = rotationRegistered,
             accelerationSource = when {
@@ -118,16 +131,15 @@ class SensorRepository(context: Context) : SensorEventListener {
                 else ->
                     AccelerationSource.UNAVAILABLE
             },
+            angularStreamActive = angularRegistered,
+            magneticStreamActive = magneticRegistered,
+            lightStreamActive = lightRegistered,
             cctSensorAvailable = cct != null,
             aoisAvailable = aois != null,
             aoisMinDelayUs = aois?.minDelay,
             vdisAvailable = vdis != null,
             vdisMinDelayUs = vdis?.minDelay,
         )
-
-        registerDefault(Sensor.TYPE_GYROSCOPE, SensorManager.SENSOR_DELAY_GAME)
-        registerDefault(Sensor.TYPE_MAGNETIC_FIELD, SensorManager.SENSOR_DELAY_GAME)
-        registerDefault(Sensor.TYPE_LIGHT, SensorManager.SENSOR_DELAY_NORMAL)
 
         val cctActive = cct?.let {
             manager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
@@ -197,6 +209,7 @@ class SensorRepository(context: Context) : SensorEventListener {
                         values[2],
                     ),
                     accelerationSource = AccelerationSource.LINEAR_SENSOR,
+                    accelerationSampleReady = true,
                 )
             }
             event.sensor.type == Sensor.TYPE_ACCELEROMETER &&
@@ -209,6 +222,7 @@ class SensorRepository(context: Context) : SensorEventListener {
                         values[2],
                     ),
                     accelerationSource = AccelerationSource.ACCELEROMETER_FALLBACK,
+                    accelerationSampleReady = true,
                 )
             }
             event.sensor.type == Sensor.TYPE_GYROSCOPE && values.size >= 3 -> {
@@ -218,6 +232,7 @@ class SensorRepository(context: Context) : SensorEventListener {
                         values[1],
                         values[2],
                     ),
+                    angularSampleReady = true,
                 )
             }
             event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD && values.size >= 3 -> {
