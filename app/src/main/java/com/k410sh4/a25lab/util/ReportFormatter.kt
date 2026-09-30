@@ -120,7 +120,7 @@ object ReportFormatter {
             }
             appendLine()
 
-            appendLine("[CÂMERAS — ${cameras.size}]")
+            appendLine("[CÂMERAS — ${cameras.size} lidas / ${snapshot.cameraCount} IDs]")
             cameras.forEach { camera ->
                 appendLine("ID ${camera.id} — ${camera.facing}")
                 appendLine("  Hardware level: ${camera.hardwareLevel}")

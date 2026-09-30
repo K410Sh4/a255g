@@ -240,6 +240,7 @@ fun PremiumAudioScreen(
 @Composable
 fun PremiumCamerasScreen(
     modifier: Modifier,
+    totalIds: Int,
     cameras: List<CameraInfo>,
     errors: List<String>,
 ) {
@@ -251,7 +252,11 @@ fun PremiumCamerasScreen(
             ToolHeader(
                 eyebrow = "LABORATÓRIO",
                 title = "Camera2",
-                subtitle = "${cameras.size} IDs de câmera expostos pela HAL.",
+                subtitle = if (totalIds == cameras.size) {
+                    "$totalIds IDs de câmera expostos pela HAL."
+                } else {
+                    "${cameras.size} de $totalIds IDs lidos com sucesso."
+                },
             )
         }
         if (errors.isNotEmpty()) {

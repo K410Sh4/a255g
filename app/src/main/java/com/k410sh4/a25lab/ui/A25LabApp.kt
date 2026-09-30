@@ -211,6 +211,8 @@ fun A25LabApp(viewModel: AppViewModel) {
 
                     Screen.Cameras -> PremiumCamerasScreen(
                         modifier = Modifier.padding(padding),
+                        totalIds = viewModel.device?.cameraCount
+                            ?: viewModel.cameras.size,
                         cameras = viewModel.cameras,
                         errors = viewModel.cameraProbeErrors,
                     )

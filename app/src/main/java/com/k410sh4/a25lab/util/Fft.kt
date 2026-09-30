@@ -22,8 +22,12 @@ class FftAnalyzer(private val size: Int) {
         require(sampleRate > 0) { "sampleRate must be positive" }
 
         imag.fill(0.0)
+        var mean = 0.0
+        for (sample in samples) mean += sample.toDouble()
+        mean /= size.toDouble()
+
         for (i in 0 until size) {
-            real[i] = samples[i].toDouble() * window[i]
+            real[i] = (samples[i].toDouble() - mean) * window[i]
         }
 
         var j = 0

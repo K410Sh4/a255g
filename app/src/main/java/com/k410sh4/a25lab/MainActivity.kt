@@ -54,16 +54,18 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        nfcAdapter?.enableReaderMode(
-            this,
-            { tag -> viewModel.onNfcTag(tag) },
-            NfcAdapter.FLAG_READER_NFC_A or
-                NfcAdapter.FLAG_READER_NFC_B or
-                NfcAdapter.FLAG_READER_NFC_F or
-                NfcAdapter.FLAG_READER_NFC_V or
-                NfcAdapter.FLAG_READER_NFC_BARCODE,
-            null,
-        )
+        runCatching {
+            nfcAdapter?.enableReaderMode(
+                this,
+                { tag -> viewModel.onNfcTag(tag) },
+                NfcAdapter.FLAG_READER_NFC_A or
+                    NfcAdapter.FLAG_READER_NFC_B or
+                    NfcAdapter.FLAG_READER_NFC_F or
+                    NfcAdapter.FLAG_READER_NFC_V or
+                    NfcAdapter.FLAG_READER_NFC_BARCODE,
+                null,
+            )
+        }
     }
 
     private fun disableNfcReaderMode() {

@@ -128,6 +128,7 @@ data class CameraInfo(
 )
 
 data class CameraProbeResult(
+    val totalIds: Int = 0,
     val cameras: List<CameraInfo> = emptyList(),
     val errors: List<String> = emptyList(),
 )

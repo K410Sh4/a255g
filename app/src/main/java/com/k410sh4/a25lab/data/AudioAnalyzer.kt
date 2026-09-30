@@ -20,6 +20,7 @@ class AudioAnalyzer(private val context: Context) {
     companion object {
         private const val SAMPLE_RATE = 44_100
         private const val FFT_SIZE = 2048
+        private const val MIN_SPECTRAL_LEVEL_DBFS = -80f
     }
 
     private data class OpenedRecorder(
@@ -171,7 +172,9 @@ class AudioAnalyzer(private val context: Context) {
         fallbackUsed: Boolean,
         onState: (AudioState) -> Unit,
     ) {
-        Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
+        runCatching {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
+        }
         val frame = ShortArray(FFT_SIZE)
         val fft = FftAnalyzer(FFT_SIZE)
 
@@ -236,7 +239,11 @@ class AudioAnalyzer(private val context: Context) {
                 -120f
             }
 
-            val dominant = fft.dominantFrequency(frame, SAMPLE_RATE)
+            val dominant = if (dbFs >= MIN_SPECTRAL_LEVEL_DBFS) {
+                fft.dominantFrequency(frame, SAMPLE_RATE)
+            } else {
+                0f
+            }
 
             if (generation.get() == session) {
                 onState(

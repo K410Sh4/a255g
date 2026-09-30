@@ -160,7 +160,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
             val deviceSnapshot = runCatching {
                 hardwareProbe.snapshot(
-                    cameraCount = cameraResult.cameras.size,
+                    cameraCount = cameraResult.totalIds,
                     sensorCount = sensorList.size,
                     featureCount = features.size,
                 )
@@ -315,9 +315,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshNfcState() {
+        val current = currentNfcState()
         nfc = nfc.copy(
-            available = currentNfcState().available,
-            enabled = currentNfcState().enabled,
+            available = current.available,
+            enabled = current.enabled,
         )
     }
 

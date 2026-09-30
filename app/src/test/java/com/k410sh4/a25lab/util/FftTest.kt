@@ -22,6 +22,14 @@ class FftTest {
     }
 
     @Test
+    fun dominantFrequency_constantDcReturnsZeroAfterDcRemoval() {
+        val samples = ShortArray(2048) { 1_000 }
+        val detected = Fft.dominantFrequency(samples, 44_100)
+
+        assertEquals(0f, detected, 0.0001f)
+    }
+
+    @Test
     fun dominantFrequency_silenceReturnsZero() {
         val detected = Fft.dominantFrequency(
             ShortArray(2048),

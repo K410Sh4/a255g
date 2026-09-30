@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,7 @@ import com.k410sh4.a25lab.util.Quaternion
 import com.k410sh4.a25lab.util.QuaternionMath
 import com.k410sh4.a25lab.util.SuperpowerMath
 import java.util.Locale
+import kotlin.math.ln
 
 @Composable
 fun Movement3DScreen(
@@ -402,7 +402,11 @@ private fun InfoBanner(title: String, body: String) {
 
 @Composable
 private fun LightLevelBar(lux: Float) {
-    val fraction = (lux / 1000f).coerceIn(0f, 1f)
+    val safeLux = lux.coerceAtLeast(0f)
+    val fraction = (
+        ln(1.0 + safeLux.toDouble()) /
+            ln(1.0 + 60_000.0)
+        ).toFloat().coerceIn(0f, 1f)
     androidx.compose.foundation.layout.Box(
         Modifier
             .fillMaxWidth()

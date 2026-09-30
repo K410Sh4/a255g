@@ -30,6 +30,7 @@ class CameraProbe(context: Context) {
         }
 
         return CameraProbeResult(
+            totalIds = ids.size,
             cameras = cameras,
             errors = errors,
         )
