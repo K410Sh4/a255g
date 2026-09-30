@@ -366,6 +366,7 @@ fun PremiumNetworkScreen(
             if (state.captivePortal) "detectado" else "não detectado",
         )
         CompactFact("Medida", if (state.metered) "sim" else "não")
+        state.lastError?.let { ErrorMessage(it) }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
