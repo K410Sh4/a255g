@@ -35,22 +35,25 @@ class AudioAnalyzer(private val context: Context) {
             onState(AudioState(lastError = "Configuração de áudio não suportada."))
             return
         }
+
         try {
-            val audioRecord = AudioRecord.Builder()
-                .setAudioSource(MediaRecorder.AudioSource.UNPROCESSED)
-                .setAudioFormat(
-                    AudioFormat.Builder()
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .setSampleRate(sampleRate)
-                        .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                        .build(),
-                )
-                .setBufferSizeInBytes(maxOf(minBuffer, fftSize * 4))
-                .build()
+            val bufferBytes = maxOf(minBuffer, fftSize * 4)
+            val (audioRecord, warning) = runCatching {
+                openRecorder(MediaRecorder.AudioSource.UNPROCESSED, sampleRate, bufferBytes) to null
+            }.getOrElse {
+                openRecorder(MediaRecorder.AudioSource.MIC, sampleRate, bufferBytes) to
+                    "Fonte UNPROCESSED indisponível; usando MIC como fallback."
+            }
+
             recorder = audioRecord
             running = true
-            audioRecord.startRecording()
-            onState(AudioState(running = true, sampleRateHz = sampleRate))
+            onState(
+                AudioState(
+                    running = true,
+                    sampleRateHz = sampleRate,
+                    lastError = warning,
+                ),
+            )
             executor.execute { loop(audioRecord, fftSize, sampleRate, onState) }
         } catch (error: Exception) {
             running = false
@@ -69,6 +72,28 @@ class AudioAnalyzer(private val context: Context) {
     fun close() {
         stop()
         executor.shutdownNow()
+    }
+
+    private fun openRecorder(source: Int, sampleRate: Int, bufferBytes: Int): AudioRecord {
+        var record: AudioRecord? = null
+        try {
+            record = AudioRecord.Builder()
+                .setAudioSource(source)
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                        .build(),
+                )
+                .setBufferSizeInBytes(bufferBytes)
+                .build()
+            record.startRecording()
+            return record
+        } catch (error: Exception) {
+            record?.release()
+            throw error
+        }
     }
 
     private fun loop(record: AudioRecord, fftSize: Int, sampleRate: Int, onState: (AudioState) -> Unit) {
