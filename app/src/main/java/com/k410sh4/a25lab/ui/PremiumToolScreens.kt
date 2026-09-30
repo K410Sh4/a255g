@@ -113,12 +113,27 @@ fun PremiumGnssScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            HeroTile("Visíveis", state.satellitesVisible.toString(), Modifier.weight(1f))
-            HeroTile("Usados no fix", state.satellitesUsed.toString(), Modifier.weight(1f))
+            HeroTile(
+                "Visíveis",
+                if (state.engineActive) state.satellitesVisible.toString() else "N/D",
+                Modifier.weight(1f),
+            )
+            HeroTile(
+                "Usados no fix",
+                if (state.engineActive) state.satellitesUsed.toString() else "N/D",
+                Modifier.weight(1f),
+            )
         }
         HeroTile(
             "Medições brutas",
-            state.rawMeasurementCount.toString(),
+            when {
+                state.rawMeasurementsActive ->
+                    state.rawMeasurementCount.toString()
+                state.rawMeasurementsSupported == false ->
+                    "Não suportado"
+                else ->
+                    "N/D"
+            },
             Modifier.fillMaxWidth(),
         )
         CompactFact(
