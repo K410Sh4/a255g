@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.model.AudioState
 import com.k410sh4.a25lab.util.Fft
@@ -74,6 +75,7 @@ class AudioAnalyzer(private val context: Context) {
         executor.shutdownNow()
     }
 
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     private fun openRecorder(source: Int, sampleRate: Int, bufferBytes: Int): AudioRecord {
         var record: AudioRecord? = null
         try {
