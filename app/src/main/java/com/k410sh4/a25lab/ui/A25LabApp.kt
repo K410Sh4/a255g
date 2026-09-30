@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.ui.theme.A25LabTheme
@@ -282,6 +283,7 @@ private fun PremiumBottomBar(
                 icon = {
                     Text(
                         icon,
+                        modifier = Modifier.clearAndSetSemantics { },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
