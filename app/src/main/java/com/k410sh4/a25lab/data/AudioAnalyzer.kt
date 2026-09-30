@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Process
@@ -30,6 +31,7 @@ class AudioAnalyzer(private val context: Context) {
         val fallbackUsed: Boolean,
     )
 
+    private val audioManager = context.getSystemService(AudioManager::class.java)
     private val executor = Executors.newSingleThreadExecutor()
     private val generation = AtomicLong(0L)
     private val recorderLock = Any()
@@ -141,25 +143,41 @@ class AudioAnalyzer(private val context: Context) {
         }
 
         val bufferBytes = maxOf(minBuffer, FFT_SIZE * 4)
+        val unprocessedAdvertised = audioManager.getProperty(
+            AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED,
+        ).equals("true", ignoreCase = true)
+
         val opened = try {
-            runCatching {
-                OpenedRecorder(
-                    record = openRecorder(
-                        MediaRecorder.AudioSource.UNPROCESSED,
-                        SAMPLE_RATE,
-                        bufferBytes,
-                    ),
-                    sourceLabel = "UNPROCESSED solicitado",
-                    fallbackUsed = false,
-                )
-            }.getOrElse {
+            if (unprocessedAdvertised) {
+                runCatching {
+                    OpenedRecorder(
+                        record = openRecorder(
+                            MediaRecorder.AudioSource.UNPROCESSED,
+                            SAMPLE_RATE,
+                            bufferBytes,
+                        ),
+                        sourceLabel = "UNPROCESSED solicitado",
+                        fallbackUsed = false,
+                    )
+                }.getOrElse {
+                    OpenedRecorder(
+                        record = openRecorder(
+                            MediaRecorder.AudioSource.MIC,
+                            SAMPLE_RATE,
+                            bufferBytes,
+                        ),
+                        sourceLabel = "MIC (fallback após UNPROCESSED)",
+                        fallbackUsed = true,
+                    )
+                }
+            } else {
                 OpenedRecorder(
                     record = openRecorder(
                         MediaRecorder.AudioSource.MIC,
                         SAMPLE_RATE,
                         bufferBytes,
                     ),
-                    sourceLabel = "MIC (fallback)",
+                    sourceLabel = "MIC (UNPROCESSED não anunciado)",
                     fallbackUsed = true,
                 )
             }
@@ -339,6 +357,7 @@ class AudioAnalyzer(private val context: Context) {
                     onState,
                     AudioState(
                         running = true,
+                        sampleReady = true,
                         rmsDbFs = dbFs.coerceAtLeast(-120f),
                         dominantFrequencyHz = dominant,
                         sampleRateHz = SAMPLE_RATE,

@@ -1,5 +1,6 @@
 package com.k410sh4.a25lab.ui
 
+import android.hardware.Sensor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,9 @@ fun PremiumSensorsScreen(
     motion: MotionSample,
 ) {
     val vendorCount = sensors.count { it.type >= 65_536 }
+    val hasAccelerometer = sensors.any { it.type == Sensor.TYPE_ACCELEROMETER }
+    val hasGyroscope = sensors.any { it.type == Sensor.TYPE_GYROSCOPE }
+    val hasMagnetometer = sensors.any { it.type == Sensor.TYPE_MAGNETIC_FIELD }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -221,7 +225,11 @@ fun PremiumAudioScreen(
     ToolPage(modifier, "PERCEPÇÃO", "Ouvido espectral", "Análise local do microfone em tempo real.") {
         HeroTile(
             "Frequência dominante",
-            String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz),
+            if (state.sampleReady) {
+                String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz)
+            } else {
+                "Aguardando leitura…"
+            },
             Modifier.fillMaxWidth(),
         )
         Row(
@@ -230,7 +238,11 @@ fun PremiumAudioScreen(
         ) {
             HeroTile(
                 "Nível",
-                String.format(Locale.US, "%.1f dBFS", state.rmsDbFs),
+                if (state.sampleReady) {
+                    String.format(Locale.US, "%.1f dBFS", state.rmsDbFs)
+                } else {
+                    "Aguardando"
+                },
                 Modifier.weight(1f),
             )
             HeroTile(
@@ -610,6 +622,16 @@ private fun HintText(text: String) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+private fun liveVector(
+    available: Boolean,
+    ready: Boolean,
+    value: String,
+): String = when {
+    !available -> "Não exposto"
+    !ready -> "Aguardando leitura…"
+    else -> value
 }
 
 private fun v3(x: Float, y: Float, z: Float): String =

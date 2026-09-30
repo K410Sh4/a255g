@@ -159,16 +159,19 @@ class SensorRepository(context: Context) : SensorEventListener {
 
         latestMotion = when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> latestMotion.copy(
+                accelReady = true,
                 ax = values[0],
                 ay = values[1],
                 az = values[2],
             )
             Sensor.TYPE_GYROSCOPE -> latestMotion.copy(
+                gyroReady = true,
                 gx = values[0],
                 gy = values[1],
                 gz = values[2],
             )
             Sensor.TYPE_MAGNETIC_FIELD -> latestMotion.copy(
+                magReady = true,
                 mx = values[0],
                 my = values[1],
                 mz = values[2],

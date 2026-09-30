@@ -132,3 +132,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 79. **Intensidade magnética zero ainda desenhava halo mínimo** — a escala visual passa a zero de verdade, evitando indicar campo não medido antes da primeira amostra.
 80. **Atualizações de dependências eram manuais** — foi adicionada configuração do Dependabot para Gradle e GitHub Actions em cadência semanal, sem auto-merge.
 81. **Privacidade BLE sem regressão estrutural** — teste unitário verifica que `BleDeviceInfo` não volte a expor um campo `address`.
+
+
+82. **Fonte UNPROCESSED era tentada sem consultar a capacidade oficial** — o analisador agora consulta `AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED` antes de solicitar a rota. Se a capacidade não for anunciada, usa MIC com diagnóstico explícito; se for anunciada e a abertura falhar, registra fallback.
+83. **Tela de sensores confundia zero inicial com leitura real** — acelerômetro, giroscópio e magnetômetro agora possuem flags de primeira amostra; a UI diferencia “Aguardando leitura…” de “Não exposto”.
+84. **Áudio exibia 0 Hz / -120 dBFS antes da primeira amostra** — `AudioState` ganhou `sampleReady`; frequência e nível só são apresentados como medidos após um frame PCM completo.
