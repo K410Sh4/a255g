@@ -1,0 +1,189 @@
+package com.k410sh4.a25lab.ui
+
+import android.app.Application
+import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
+import com.k410sh4.a25lab.data.AudioAnalyzer
+import com.k410sh4.a25lab.data.BleRepository
+import com.k410sh4.a25lab.data.CameraProbe
+import com.k410sh4.a25lab.data.ComputeBenchmark
+import com.k410sh4.a25lab.data.GnssRepository
+import com.k410sh4.a25lab.data.HardwareProbe
+import com.k410sh4.a25lab.data.NetworkProbe
+import com.k410sh4.a25lab.data.NfcParser
+import com.k410sh4.a25lab.data.SensorRepository
+import com.k410sh4.a25lab.model.AudioState
+import com.k410sh4.a25lab.model.BleState
+import com.k410sh4.a25lab.model.CameraInfo
+import com.k410sh4.a25lab.model.DeviceSnapshot
+import com.k410sh4.a25lab.model.GnssState
+import com.k410sh4.a25lab.model.MotionSample
+import com.k410sh4.a25lab.model.NetworkState
+import com.k410sh4.a25lab.model.NfcState
+import com.k410sh4.a25lab.model.SensorInfo
+import com.k410sh4.a25lab.util.ReportFormatter
+import java.util.concurrent.Executors
+
+class AppViewModel(application: Application) : AndroidViewModel(application) {
+    private val context = application.applicationContext
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val background = Executors.newSingleThreadExecutor()
+    private val sensorsRepository = SensorRepository(context)
+    private val cameraProbe = CameraProbe(context)
+    private val hardwareProbe = HardwareProbe(context)
+    private val gnssRepository = GnssRepository(context)
+    private val bleRepository = BleRepository(context)
+    private val audioAnalyzer = AudioAnalyzer(context)
+    private val networkProbe = NetworkProbe(context)
+    private val computeBenchmark = ComputeBenchmark()
+
+    var screen by mutableStateOf(Screen.Dashboard)
+        private set
+    var device by mutableStateOf<DeviceSnapshot?>(null)
+        private set
+    var sensors by mutableStateOf<List<SensorInfo>>(emptyList())
+        private set
+    var motion by mutableStateOf(MotionSample())
+        private set
+    var gnss by mutableStateOf(GnssState())
+        private set
+    var ble by mutableStateOf(BleState())
+        private set
+    var cameras by mutableStateOf<List<CameraInfo>>(emptyList())
+        private set
+    var audio by mutableStateOf(AudioState())
+        private set
+    var network by mutableStateOf(NetworkState())
+        private set
+    var nfc by mutableStateOf(NfcState())
+        private set
+    var computeResult by mutableStateOf<ComputeBenchmark.Result?>(null)
+        private set
+    var computeRunning by mutableStateOf(false)
+        private set
+
+    init {
+        refreshStaticProbe()
+        refreshNetwork()
+        val adapter = NfcAdapter.getDefaultAdapter(context)
+        nfc = NfcState(available = adapter != null, enabled = adapter?.isEnabled == true)
+    }
+
+    fun navigate(target: Screen) {
+        if (screen == target) return
+        stopLiveModules()
+        screen = target
+        if (target == Screen.Sensors) startMotion()
+        if (target == Screen.Network) refreshNetwork()
+    }
+
+    fun refreshStaticProbe() {
+        val sensorList = runCatching { sensorsRepository.listSensors() }.getOrDefault(emptyList())
+        val cameraList = runCatching { cameraProbe.probe() }.getOrDefault(emptyList())
+        sensors = sensorList
+        cameras = cameraList
+        device = runCatching { hardwareProbe.snapshot(cameraList.size, sensorList.size) }.getOrNull()
+    }
+
+    fun refreshNetwork() {
+        network = runCatching { networkProbe.snapshot() }.getOrDefault(NetworkState())
+    }
+
+    fun startMotion() {
+        sensorsRepository.startMotion { sample -> post { motion = sample } }
+    }
+
+    fun startGnss() {
+        gnssRepository.start { state -> post { gnss = state } }
+    }
+
+    fun stopGnss() {
+        gnssRepository.stop()
+        gnss = gnss.copy(running = false)
+    }
+
+    fun startBle() {
+        bleRepository.start { state -> post { ble = state } }
+    }
+
+    fun stopBle() {
+        bleRepository.stop()
+        ble = ble.copy(scanning = false)
+    }
+
+    fun startAudio() {
+        audioAnalyzer.start { state -> post { audio = state } }
+    }
+
+    fun stopAudio() {
+        audioAnalyzer.stop()
+        audio = audio.copy(running = false)
+    }
+
+    fun onNfcTag(tag: Tag) {
+        val adapter = NfcAdapter.getDefaultAdapter(context)
+        background.execute {
+            val parsed = NfcParser.parse(tag, adapter != null, adapter?.isEnabled == true)
+            post { nfc = parsed }
+        }
+    }
+
+    fun refreshNfcState() {
+        val adapter = NfcAdapter.getDefaultAdapter(context)
+        nfc = nfc.copy(available = adapter != null, enabled = adapter?.isEnabled == true)
+    }
+
+    fun runCpuBaseline() {
+        if (computeRunning) return
+        computeRunning = true
+        computeResult = null
+        background.execute {
+            val result = runCatching { computeBenchmark.run() }.getOrNull()
+            post {
+                computeResult = result
+                computeRunning = false
+            }
+        }
+    }
+
+    fun report(): String = ReportFormatter.build(device, sensors, cameras)
+
+    fun stopLiveModules() {
+        sensorsRepository.stopMotion()
+        gnssRepository.stop()
+        bleRepository.stop()
+        audioAnalyzer.stop()
+        gnss = gnss.copy(running = false)
+        ble = ble.copy(scanning = false)
+        audio = audio.copy(running = false)
+    }
+
+    override fun onCleared() {
+        stopLiveModules()
+        audioAnalyzer.close()
+        background.shutdownNow()
+        super.onCleared()
+    }
+
+    private fun post(block: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post(block)
+    }
+}
+
+enum class Screen(val title: String) {
+    Dashboard("A25 Lab"),
+    Sensors("Sensores"),
+    Gnss("GNSS"),
+    Bluetooth("Bluetooth LE"),
+    Audio("Áudio"),
+    Cameras("Camera2"),
+    Nfc("NFC"),
+    Network("Rede"),
+    Compute("Compute / IA"),
+}
