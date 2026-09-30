@@ -137,3 +137,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 82. **Fonte UNPROCESSED era tentada sem consultar a capacidade oficial** — o analisador agora consulta `AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED` antes de solicitar a rota. Se a capacidade não for anunciada, usa MIC com diagnóstico explícito; se for anunciada e a abertura falhar, registra fallback.
 83. **Tela de sensores confundia zero inicial com leitura real** — acelerômetro, giroscópio e magnetômetro agora possuem flags de primeira amostra; a UI diferencia “Aguardando leitura…” de “Não exposto”.
 84. **Áudio exibia 0 Hz / -120 dBFS antes da primeira amostra** — `AudioState` ganhou `sampleReady`; frequência e nível só são apresentados como medidos após um frame PCM completo.
+
+
+85. **Benchmark CPU continuava após sair da tela ou enviar o app ao background** — o benchmark ganhou cancelamento cooperativo e geração de sessão. Navegação/background invalidam a execução em andamento e impedem publicação tardia de resultado.
+86. **Resultado de benchmark cancelado podia reaparecer depois da navegação** — a UI só aceita o resultado da geração de compute ainda ativa; cancelamentos não são apresentados como falha.

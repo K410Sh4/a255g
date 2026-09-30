@@ -59,6 +59,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
     private val reportGeneration = AtomicLong(0L)
     private val nfcReadGeneration = AtomicLong(0L)
+    private val computeGeneration = AtomicLong(0L)
 
     @Volatile
     private var cleared = false
@@ -128,7 +129,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             (screen == Screen.Superpowers || screen == Screen.Environment) &&
                 target != Screen.Superpowers &&
                 target != Screen.Environment
+        val leavingCompute =
+            screen == Screen.Compute && target != Screen.Compute
         stopLiveModules(clearUserRequests = true)
+        if (leavingCompute) cancelComputeBenchmark()
         if (leavingNfc) {
             nfcReadGeneration.incrementAndGet()
             val current = currentNfcState()
@@ -163,6 +167,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         inForeground = false
         nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = false)
+        cancelComputeBenchmark()
 
         ble = BleState()
         gnss = idleGnssState()
@@ -461,6 +466,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         cleared = true
         nfcReadGeneration.incrementAndGet()
+        computeGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = true)
         audioAnalyzer.close()
         ioExecutor.shutdownNow()
@@ -514,6 +520,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             bleRequested = false
             audioRequested = false
         }
+    }
+
+    private fun cancelComputeBenchmark() {
+        if (!computeRunning) return
+        computeGeneration.incrementAndGet()
+        computeRunning = false
+        computeError = null
     }
 
     private fun probeFailure(

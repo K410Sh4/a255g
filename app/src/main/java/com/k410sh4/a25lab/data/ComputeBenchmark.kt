@@ -1,6 +1,7 @@
 package com.k410sh4.a25lab.data
 
 import java.util.Random
+import java.util.concurrent.CancellationException
 
 class ComputeBenchmark {
     companion object {
@@ -21,6 +22,7 @@ class ComputeBenchmark {
         size: Int = 160,
         warmupIterations: Int = DEFAULT_WARMUP_ITERATIONS,
         measuredIterations: Int = DEFAULT_MEASURED_ITERATIONS,
+        shouldCancel: () -> Boolean = { false },
     ): Result {
         require(size in 32..512)
         require(warmupIterations in 0..5)
@@ -36,15 +38,17 @@ class ComputeBenchmark {
         val c = FloatArray(size * size)
 
         repeat(warmupIterations) {
+            ensureActive(shouldCancel)
             c.fill(0f)
-            multiply(a, b, c, size)
+            multiply(a, b, c, size, shouldCancel)
         }
 
         val samplesNs = LongArray(measuredIterations)
         repeat(measuredIterations) { iteration ->
+            ensureActive(shouldCancel)
             c.fill(0f)
             val start = System.nanoTime()
-            multiply(a, b, c, size)
+            multiply(a, b, c, size, shouldCancel)
             samplesNs[iteration] = (System.nanoTime() - start)
                 .coerceAtLeast(1L)
         }
@@ -77,8 +81,12 @@ class ComputeBenchmark {
         b: FloatArray,
         c: FloatArray,
         size: Int,
+        shouldCancel: () -> Boolean,
     ) {
         for (i in 0 until size) {
+            if (i and 0x0F == 0) {
+                ensureActive(shouldCancel)
+            }
             val row = i * size
             for (k in 0 until size) {
                 val aik = a[row + k]
@@ -87,6 +95,12 @@ class ComputeBenchmark {
                     c[row + j] += aik * b[bRow + j]
                 }
             }
+        }
+    }
+
+    private fun ensureActive(shouldCancel: () -> Boolean) {
+        if (Thread.currentThread().isInterrupted || shouldCancel()) {
+            throw CancellationException("Benchmark cancelado.")
         }
     }
 }

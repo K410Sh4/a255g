@@ -3,6 +3,7 @@ package com.k410sh4.a25lab.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CancellationException
 
 class ComputeBenchmarkTest {
     @Test
@@ -23,5 +24,23 @@ class ComputeBenchmarkTest {
         assertEquals(32, first.matrixSize)
         assertEquals(1, first.measuredIterations)
         assertTrue(first.estimatedGflops > 0.0)
+    }
+
+    @Test
+    fun run_stopsWhenCancellationIsRequested() {
+        var cancelled = false
+
+        try {
+            ComputeBenchmark().run(
+                size = 32,
+                warmupIterations = 0,
+                measuredIterations = 1,
+                shouldCancel = { true },
+            )
+        } catch (_: CancellationException) {
+            cancelled = true
+        }
+
+        assertTrue(cancelled)
     }
 }
