@@ -202,6 +202,7 @@ class SensorRepository(context: Context) : SensorEventListener {
                     quaternionX = smoothedQuaternion.x,
                     quaternionY = smoothedQuaternion.y,
                     quaternionZ = smoothedQuaternion.z,
+                    orientationSampleReady = true,
                 )
             }
             event.sensor.stringType == CCT_STRING_TYPE && values.isNotEmpty() -> {
