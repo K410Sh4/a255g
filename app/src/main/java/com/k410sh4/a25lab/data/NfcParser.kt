@@ -8,7 +8,7 @@ import java.util.Locale
 
 object NfcParser {
     fun parse(tag: Tag, available: Boolean, enabled: Boolean): NfcState {
-        val idHex = tag.id.joinToString("") { "%02X".format(Locale.US, it) }
+        val idHex = tag.id.joinToString("") { "%02X".format(Locale.US, it.toInt() and 0xFF) }
         val techs = tag.techList.map { it.substringAfterLast('.') }
         val ndefText = runCatching {
             val ndef = Ndef.get(tag) ?: return@runCatching null

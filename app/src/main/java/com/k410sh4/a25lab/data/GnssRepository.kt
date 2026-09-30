@@ -38,7 +38,7 @@ class GnssRepository(private val context: Context) {
         }
 
         override fun onStatusChanged(status: Int) {
-            if (status == STATUS_NOT_SUPPORTED) {
+            if (status == GnssMeasurementsEvent.Callback.STATUS_NOT_SUPPORTED) {
                 update(state.copy(lastError = "Medições GNSS brutas não são suportadas pelo framework/firmware."))
             }
         }

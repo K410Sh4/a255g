@@ -29,9 +29,9 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 
 - Kotlin
 - Jetpack Compose + Material 3
-- Android Gradle Plugin 9.4.0
+- Android Gradle Plugin 9.4.1
 - Gradle 9.6.0 na CI
-- compile/target SDK 37
+- compile/target SDK 36
 - min SDK 31
 
 ## Permissões
@@ -40,13 +40,13 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 - `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT`: descoberta BLE moderna.
 - `RECORD_AUDIO`: Audio Lab local.
 - `NFC`: leitura de tags em primeiro plano.
-- `CAMERA`: reservada para a evolução de captura Camera2; o probe atual consulta características.
+- `ACCESS_NETWORK_STATE`: leitura das capacidades da rede ativa.
 
-Nenhum áudio é enviado para rede pelo app.
+O probe Camera2 consulta apenas características e, por isso, não pede permissão de câmera nesta versão. O app também não declara `INTERNET`: nenhum áudio, GNSS, BLE ou NFC é enviado para servidores.
 
 ## Build local
 
-Requer JDK 17, Android SDK 37, Build Tools 36.0.0 e Gradle 9.6.0.
+Requer JDK 17, Android SDK 36, Build Tools 36.0.0 e Gradle 9.6.0.
 
 ```bash
 gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
