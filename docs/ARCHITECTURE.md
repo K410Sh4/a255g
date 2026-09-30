@@ -44,12 +44,18 @@ O Exynos 1280 possui aceleração de IA no SoC, mas isso não prova que um APK c
 
 A CI executa:
 
-1. build Debug;
-2. testes unitários;
-3. Android Lint;
-4. upload do APK somente se as etapas anteriores passarem.
+1. validação automática do Gradle Wrapper;
+2. build Debug;
+3. build Release com shrink/R8;
+4. testes unitários;
+5. compilação dos testes instrumentados;
+6. Android Lint com warnings relevantes promovidos a erro;
+7. smoke tests instrumentados em emulador Android 16/API 36;
+8. upload de relatórios e APKs somente conforme o resultado das etapas.
 
-A validação de sensores, GNSS raw, Camera2, NFC, BLE, áudio e aceleração de IA exige teste físico no SM-A256E.
+O build usa exclusivamente o Gradle Wrapper 9.6.0 versionado no repositório. A distribuição binária possui SHA-256 fixado em `gradle-wrapper.properties`.
+
+A validação de sensores vendor, GNSS raw real, Camera2 físico, NFC, BLE, áudio e aceleração de IA ainda exige teste físico no SM-A256E.
 
 
 ## Inventário interno automático (v0.2)
@@ -123,3 +129,10 @@ Continuam exigindo aparelho físico:
 - campos efetivamente preenchidos em `GnssMeasurement`;
 - processamento real aplicado à fonte de áudio solicitada como `UNPROCESSED`;
 - consumo, temperatura e estabilidade em sessões longas.
+
+
+## Build reproduzível e supply chain
+
+O repositório contém `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar` e `gradle-wrapper.properties`. O Wrapper está fixado no Gradle 9.6.0, com checksum SHA-256 da distribuição `-bin`. A CI usa `gradle/actions/setup-gradle`, que valida o JAR do wrapper contra checksums oficiais antes de executar os comandos.
+
+As GitHub Actions usadas no workflow são referenciadas por commit imutável, reduzindo o risco de uma tag upstream mudar de conteúdo.
