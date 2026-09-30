@@ -16,7 +16,7 @@ class CameraProbe(context: Context) {
             .getOrElse { error ->
                 return CameraProbeResult(
                     errors = listOf(
-                        "Falha ao listar Camera2 IDs: ${error.message ?: error::class.java.simpleName}",
+                        "Falha ao listar Camera2 IDs: ${probeErrorName(error)}",
                     ),
                 )
             }
@@ -24,7 +24,7 @@ class CameraProbe(context: Context) {
         val cameras = ids.mapNotNull { id ->
             runCatching { probeOne(id) }
                 .onFailure { error ->
-                    errors += "ID $id: ${error.message ?: error::class.java.simpleName}"
+                    errors += "ID $id: ${probeErrorName(error)}"
                 }
                 .getOrNull()
         }
@@ -90,6 +90,9 @@ class CameraProbe(context: Context) {
             oisModes = ois,
         )
     }
+
+    private fun probeErrorName(error: Throwable): String =
+        error::class.java.simpleName.ifBlank { "Erro desconhecido" }
 
     private fun hardwareLevelName(level: Int?): String = when (level) {
         CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY -> "LEGACY"
