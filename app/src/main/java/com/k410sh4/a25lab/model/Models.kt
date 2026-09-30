@@ -90,6 +90,8 @@ data class MotionSample(
 
 data class GnssState(
     val running: Boolean = false,
+    val locationEnabled: Boolean = true,
+    val rawMeasurementsSupported: Boolean = false,
     val satellitesVisible: Int = 0,
     val satellitesUsed: Int = 0,
     val rawMeasurementCount: Int = 0,
@@ -103,6 +105,7 @@ data class BleDeviceInfo(
     val address: String,
     val rssi: Int,
     val connectable: Boolean?,
+    val lastSeenElapsedMs: Long = 0L,
 )
 
 data class BleState(
@@ -124,20 +127,29 @@ data class CameraInfo(
     val oisModes: List<String>,
 )
 
+data class CameraProbeResult(
+    val cameras: List<CameraInfo> = emptyList(),
+    val errors: List<String> = emptyList(),
+)
+
 data class AudioState(
     val running: Boolean = false,
     val rmsDbFs: Float = -120f,
     val dominantFrequencyHz: Float = 0f,
     val sampleRateHz: Int = 44_100,
+    val sourceLabel: String = "N/D",
+    val fallbackUsed: Boolean = false,
     val lastError: String? = null,
 )
 
 data class NetworkState(
     val connected: Boolean = false,
+    val internetCapability: Boolean = false,
+    val validated: Boolean = false,
+    val captivePortal: Boolean = false,
     val transports: List<String> = emptyList(),
     val downstreamKbps: Int = 0,
     val upstreamKbps: Int = 0,
-    val validated: Boolean = false,
     val metered: Boolean = false,
 )
 

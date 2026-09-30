@@ -121,7 +121,18 @@ fun PremiumGnssScreen(
             state.rawMeasurementCount.toString(),
             Modifier.fillMaxWidth(),
         )
-        CompactFact("Constelações", state.constellations.joinToString().ifBlank { "N/D" })
+        CompactFact(
+            "Localização do Android",
+            if (state.locationEnabled) "ativada" else "desativada",
+        )
+        CompactFact(
+            "GNSS raw anunciado",
+            if (state.rawMeasurementsSupported) "sim" else "não",
+        )
+        CompactFact(
+            "Constelações",
+            state.constellations.joinToString().ifBlank { "N/D" },
+        )
         state.lastError?.let { ErrorMessage(it) }
         StartStopButtons(state.running, onStart, onStop)
         HintText("Campos GNSS avançados dependem do chipset e firmware. O app não inventa medições ausentes.")
@@ -174,7 +185,7 @@ fun PremiumBleScreen(
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Text(
-                        device.address,
+                        "Identificador de hardware não coletado",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -216,6 +227,10 @@ fun PremiumAudioScreen(
                 Modifier.weight(1f),
             )
         }
+        CompactFact(
+            "Fonte de captura",
+            state.sourceLabel + if (state.fallbackUsed) " · fallback ativo" else "",
+        )
         StartStopButtons(state.running, onStart, onStop)
         state.lastError?.let { ErrorMessage(it) }
         HintText("PCM e FFT são processados localmente. O app continua sem permissão INTERNET.")
@@ -226,6 +241,7 @@ fun PremiumAudioScreen(
 fun PremiumCamerasScreen(
     modifier: Modifier,
     cameras: List<CameraInfo>,
+    errors: List<String>,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -237,6 +253,16 @@ fun PremiumCamerasScreen(
                 title = "Camera2",
                 subtitle = "${cameras.size} IDs de câmera expostos pela HAL.",
             )
+        }
+        if (errors.isNotEmpty()) {
+            item {
+                ToolPanel("Falhas parciais do probe") {
+                    errors.forEach { error ->
+                        ErrorMessage(error)
+                    }
+                    HintText("As outras câmeras continuam disponíveis; uma falha isolada não apaga todo o inventário.")
+                }
+            }
         }
         items(cameras, key = { it.id }) { camera ->
             Card(Modifier.fillMaxWidth()) {
@@ -290,12 +316,32 @@ fun PremiumNetworkScreen(
 ) {
     ToolPage(modifier, "CONECTIVIDADE", "Rede", "Estado da interface ativa segundo NetworkCapabilities.") {
         HeroTile(
-            "Conexão",
-            if (state.connected) "Online" else "Offline",
+            "Estado",
+            when {
+                state.validated -> "Internet validada"
+                state.captivePortal -> "Portal de acesso"
+                state.connected && state.internetCapability -> "Rede sem validação"
+                state.connected -> "Rede local"
+                else -> "Sem rede ativa"
+            },
             Modifier.fillMaxWidth(),
         )
-        CompactFact("Transportes", state.transports.joinToString().ifBlank { "N/D" })
-        CompactFact("Rede validada", if (state.validated) "sim" else "não")
+        CompactFact(
+            "Transportes",
+            state.transports.joinToString().ifBlank { "N/D" },
+        )
+        CompactFact(
+            "Capacidade INTERNET",
+            if (state.internetCapability) "declarada" else "não declarada",
+        )
+        CompactFact(
+            "Rede validada",
+            if (state.validated) "sim" else "não",
+        )
+        CompactFact(
+            "Portal cativo",
+            if (state.captivePortal) "detectado" else "não detectado",
+        )
         CompactFact("Medida", if (state.metered) "sim" else "não")
         Row(
             modifier = Modifier.fillMaxWidth(),

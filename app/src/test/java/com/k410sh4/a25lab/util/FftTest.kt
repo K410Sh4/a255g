@@ -22,6 +22,16 @@ class FftTest {
     }
 
     @Test
+    fun dominantFrequency_silenceReturnsZero() {
+        val detected = Fft.dominantFrequency(
+            ShortArray(2048),
+            44_100,
+        )
+
+        assertEquals(0f, detected, 0.0001f)
+    }
+
+    @Test
     fun dominantFrequency_rejectsNonPowerOfTwo() {
         assertThrows(IllegalArgumentException::class.java) {
             Fft.dominantFrequency(ShortArray(1000), 44_100)

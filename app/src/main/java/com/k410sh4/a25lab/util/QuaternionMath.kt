@@ -1,5 +1,6 @@
 package com.k410sh4.a25lab.util
 
+import kotlin.math.exp
 import kotlin.math.sqrt
 
 data class Quaternion(
@@ -50,5 +51,17 @@ object QuaternionMath {
                 z = from.z + (target.z - from.z) * t,
             ),
         )
+    }
+
+    fun smoothingAlpha(
+        deltaTimeNs: Long,
+        timeConstantMs: Float = 65f,
+    ): Float {
+        if (deltaTimeNs <= 0L || timeConstantMs <= 0f) return 1f
+        val deltaSeconds = deltaTimeNs / 1_000_000_000.0
+        val tauSeconds = timeConstantMs / 1000.0
+        return (1.0 - exp(-deltaSeconds / tauSeconds))
+            .toFloat()
+            .coerceIn(0.02f, 1f)
     }
 }

@@ -34,21 +34,33 @@ import com.k410sh4.a25lab.model.SystemFeatureInfo
 import com.k410sh4.a25lab.util.ReportFormatter
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
-    private val context = application.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val background = Executors.newSingleThreadExecutor()
-    private val sensorsRepository = SensorRepository(context)
-    private val cameraProbe = CameraProbe(context)
-    private val hardwareProbe = HardwareProbe(context)
-    private val gnssRepository = GnssRepository(context)
-    private val bleRepository = BleRepository(context)
-    private val audioAnalyzer = AudioAnalyzer(context)
-    private val networkProbe = NetworkProbe(context)
+    private val ioExecutor = Executors.newSingleThreadExecutor()
+    private val computeExecutor = Executors.newSingleThreadExecutor()
+
+    private val sensorsRepository = SensorRepository(application.applicationContext)
+    private val cameraProbe = CameraProbe(application.applicationContext)
+    private val hardwareProbe = HardwareProbe(application.applicationContext)
+    private val gnssRepository = GnssRepository(application.applicationContext)
+    private val bleRepository = BleRepository(application.applicationContext)
+    private val audioAnalyzer = AudioAnalyzer(application.applicationContext)
+    private val networkProbe = NetworkProbe(application.applicationContext)
     private val computeBenchmark = ComputeBenchmark()
-    private val clipboard = context.getSystemService(ClipboardManager::class.java)
-    private val snapshotFile = File(context.filesDir, "a25lab_last_internal_specs.txt")
+
+    private val clipboard = application.getSystemService(ClipboardManager::class.java)
+    private val snapshotFile = File(
+        application.filesDir,
+        "a25lab_last_internal_specs.txt",
+    )
+    private val reportGeneration = AtomicLong(0L)
+
+    private var inForeground = true
+    private var gnssRequested = false
+    private var bleRequested = false
+    private var audioRequested = false
 
     var screen by mutableStateOf(Screen.Dashboard)
         private set
@@ -68,6 +80,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var cameras by mutableStateOf<List<CameraInfo>>(emptyList())
         private set
+    var cameraProbeErrors by mutableStateOf<List<String>>(emptyList())
+        private set
     var audio by mutableStateOf(AudioState())
         private set
     var network by mutableStateOf(NetworkState())
@@ -78,6 +92,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var computeRunning by mutableStateOf(false)
         private set
+    var refreshRunning by mutableStateOf(false)
+        private set
     var copyStatus by mutableStateOf("Preparando inventário interno…")
         private set
 
@@ -87,124 +103,235 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun navigate(target: Screen) {
         if (screen == target) return
-        stopLiveModules()
+
+        stopLiveModules(clearUserRequests = true)
         screen = target
-        when (target) {
-            Screen.Sensors -> startMotion()
-            Screen.Superpowers,
-            Screen.Environment,
-            -> startSuperpowers()
-            Screen.Network -> refreshNetwork()
+
+        if (target == Screen.Network) refreshNetwork()
+        if (inForeground) startAutomaticModulesForCurrentScreen()
+    }
+
+    fun onAppBackground() {
+        inForeground = false
+        stopLiveModules(clearUserRequests = false)
+    }
+
+    fun onAppForeground() {
+        inForeground = true
+        startAutomaticModulesForCurrentScreen()
+
+        when (screen) {
+            Screen.Gnss -> if (gnssRequested) startGnssInternal()
+            Screen.Bluetooth -> if (bleRequested) startBleInternal()
+            Screen.Audio -> if (audioRequested) startAudioInternal()
             else -> Unit
         }
     }
 
     fun refreshAllAndCopy() {
-        val sensorList = runCatching { sensorsRepository.listSensors() }.getOrDefault(emptyList())
-        val cameraList = runCatching { cameraProbe.probe() }.getOrDefault(emptyList())
-        val features = runCatching { hardwareProbe.systemFeatures() }.getOrDefault(emptyList())
+        if (refreshRunning) return
 
-        sensors = sensorList
-        cameras = cameraList
-        systemFeatures = features
-        network = runCatching { networkProbe.snapshot() }.getOrDefault(NetworkState())
+        refreshRunning = true
+        copyStatus = "Lendo capacidades do aparelho…"
+        val nfcSnapshot = currentNfcState()
 
-        val adapter = NfcAdapter.getDefaultAdapter(context)
-        nfc = nfc.copy(
-            available = adapter != null,
-            enabled = adapter?.isEnabled == true,
-        )
+        ioExecutor.execute {
+            val sensorList = runCatching {
+                sensorsRepository.listSensors()
+            }.getOrDefault(emptyList())
 
-        device = runCatching {
-            hardwareProbe.snapshot(
-                cameraCount = cameraList.size,
-                sensorCount = sensorList.size,
-                featureCount = features.size,
+            val cameraResult = runCatching {
+                cameraProbe.probe()
+            }.getOrElse { error ->
+                com.k410sh4.a25lab.model.CameraProbeResult(
+                    errors = listOf(
+                        error.message ?: "Falha inesperada no Camera2 probe.",
+                    ),
+                )
+            }
+
+            val features = runCatching {
+                hardwareProbe.systemFeatures()
+            }.getOrDefault(emptyList())
+
+            val networkSnapshot = runCatching {
+                networkProbe.snapshot()
+            }.getOrDefault(NetworkState())
+
+            val deviceSnapshot = runCatching {
+                hardwareProbe.snapshot(
+                    cameraCount = cameraResult.cameras.size,
+                    sensorCount = sensorList.size,
+                    featureCount = features.size,
+                )
+            }.getOrNull()
+
+            val text = ReportFormatter.build(
+                snapshot = deviceSnapshot,
+                sensors = sensorList,
+                cameras = cameraResult.cameras,
+                cameraProbeErrors = cameraResult.errors,
+                systemFeatures = features,
+                network = networkSnapshot,
+                nfc = nfcSnapshot,
             )
-        }.getOrNull()
 
-        copySpecificationsToClipboard()
+            val fileResult = runCatching {
+                if (deviceSnapshot != null) snapshotFile.writeText(text)
+            }
+
+            post {
+                sensors = sensorList
+                cameras = cameraResult.cameras
+                cameraProbeErrors = cameraResult.errors
+                systemFeatures = features
+                network = networkSnapshot
+                nfc = nfcSnapshot
+                device = deviceSnapshot
+                refreshRunning = false
+
+                if (deviceSnapshot == null) {
+                    copyStatus = "Snapshot indisponível; consulte os detalhes do laboratório."
+                } else {
+                    copyReportToClipboardAndPublishStatus(
+                        text = text,
+                        fileSaved = fileResult.isSuccess,
+                        automatic = true,
+                    )
+                }
+            }
+        }
     }
 
     fun refreshStaticProbe() = refreshAllAndCopy()
 
     fun refreshNetwork() {
-        network = runCatching { networkProbe.snapshot() }.getOrDefault(NetworkState())
+        network = runCatching {
+            networkProbe.snapshot()
+        }.getOrDefault(NetworkState())
     }
 
     fun copySpecificationsToClipboard() {
-        val text = report()
         if (device == null) {
             copyStatus = "Não foi possível copiar: snapshot indisponível."
             return
         }
 
-        runCatching {
+        val text = report()
+        val generation = reportGeneration.incrementAndGet()
+        val clipboardResult = runCatching {
             clipboard.setPrimaryClip(
-                ClipData.newPlainText("A25 Lab — especificações internas", text),
+                ClipData.newPlainText(
+                    "A25 Lab — especificações internas",
+                    text,
+                ),
             )
-            snapshotFile.writeText(text)
-        }.onSuccess {
-            copyStatus = "Especificações internas copiadas automaticamente (${text.length} caracteres) e salvas localmente."
-        }.onFailure { error ->
-            copyStatus = "Falha ao copiar especificações: ${error.message ?: "erro desconhecido"}"
+        }
+
+        copyStatus = if (clipboardResult.isSuccess) {
+            "Relatório copiado; atualizando snapshot privado…"
+        } else {
+            "Falha ao copiar para a área de transferência."
+        }
+
+        ioExecutor.execute {
+            val fileSaved = runCatching {
+                snapshotFile.writeText(text)
+            }.isSuccess
+
+            post {
+                if (reportGeneration.get() != generation) return@post
+                copyStatus = when {
+                    clipboardResult.isSuccess && fileSaved ->
+                        "Relatório copiado e snapshot privado atualizado."
+                    clipboardResult.isSuccess ->
+                        "Relatório copiado; falha ao atualizar o snapshot privado."
+                    fileSaved ->
+                        "Falha no clipboard; snapshot privado foi atualizado."
+                    else ->
+                        "Falha ao copiar e ao salvar o snapshot privado."
+                }
+            }
         }
     }
 
     fun startMotion() {
-        sensorsRepository.startMotion { sample -> post { motion = sample } }
+        if (!inForeground) return
+        sensorsRepository.startMotion { sample ->
+            post { motion = sample }
+        }
     }
 
     fun startSuperpowers() {
-        sensorsRepository.startSuperpowers { state -> post { superpowers = state } }
+        if (!inForeground) return
+        sensorsRepository.startSuperpowers { state ->
+            post { superpowers = state }
+        }
     }
 
     fun startGnss() {
-        gnssRepository.start { state -> post { gnss = state } }
+        gnssRequested = true
+        if (inForeground && screen == Screen.Gnss) startGnssInternal()
     }
 
     fun stopGnss() {
+        gnssRequested = false
         gnssRepository.stop()
         gnss = gnss.copy(running = false)
     }
 
     fun startBle() {
-        bleRepository.start { state -> post { ble = state } }
+        bleRequested = true
+        if (inForeground && screen == Screen.Bluetooth) startBleInternal()
     }
 
     fun stopBle() {
+        bleRequested = false
         bleRepository.stop()
         ble = ble.copy(scanning = false)
     }
 
     fun startAudio() {
-        audioAnalyzer.start { state -> post { audio = state } }
+        audioRequested = true
+        if (inForeground && screen == Screen.Audio) startAudioInternal()
     }
 
     fun stopAudio() {
+        audioRequested = false
         audioAnalyzer.stop()
         audio = audio.copy(running = false)
     }
 
     fun onNfcTag(tag: Tag) {
-        val adapter = NfcAdapter.getDefaultAdapter(context)
-        background.execute {
-            val parsed = NfcParser.parse(tag, adapter != null, adapter?.isEnabled == true)
+        val state = currentNfcState()
+        ioExecutor.execute {
+            val parsed = NfcParser.parse(
+                tag = tag,
+                available = state.available,
+                enabled = state.enabled,
+            )
             post { nfc = parsed }
         }
     }
 
     fun refreshNfcState() {
-        val adapter = NfcAdapter.getDefaultAdapter(context)
-        nfc = nfc.copy(available = adapter != null, enabled = adapter?.isEnabled == true)
+        nfc = nfc.copy(
+            available = currentNfcState().available,
+            enabled = currentNfcState().enabled,
+        )
     }
 
     fun runCpuBaseline() {
         if (computeRunning) return
+
         computeRunning = true
         computeResult = null
-        background.execute {
-            val result = runCatching { computeBenchmark.run() }.getOrNull()
+
+        computeExecutor.execute {
+            val result = runCatching {
+                computeBenchmark.run()
+            }.getOrNull()
+
             post {
                 computeResult = result
                 computeRunning = false
@@ -216,30 +343,112 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         snapshot = device,
         sensors = sensors,
         cameras = cameras,
+        cameraProbeErrors = cameraProbeErrors,
         systemFeatures = systemFeatures,
         network = network,
         nfc = nfc,
     )
 
-    fun stopLiveModules() {
+    override fun onCleared() {
+        stopLiveModules(clearUserRequests = true)
+        audioAnalyzer.close()
+        ioExecutor.shutdownNow()
+        computeExecutor.shutdownNow()
+        super.onCleared()
+    }
+
+    private fun startAutomaticModulesForCurrentScreen() {
+        when (screen) {
+            Screen.Sensors -> startMotion()
+            Screen.Superpowers,
+            Screen.Environment,
+            -> startSuperpowers()
+            else -> Unit
+        }
+    }
+
+    private fun startGnssInternal() {
+        gnssRepository.start { state ->
+            post { gnss = state }
+        }
+    }
+
+    private fun startBleInternal() {
+        bleRepository.start { state ->
+            post { ble = state }
+        }
+    }
+
+    private fun startAudioInternal() {
+        audioAnalyzer.start { state ->
+            post { audio = state }
+        }
+    }
+
+    private fun stopLiveModules(clearUserRequests: Boolean) {
         sensorsRepository.stopMotion()
         gnssRepository.stop()
         bleRepository.stop()
         audioAnalyzer.stop()
+
         gnss = gnss.copy(running = false)
         ble = ble.copy(scanning = false)
         audio = audio.copy(running = false)
+
+        if (clearUserRequests) {
+            gnssRequested = false
+            bleRequested = false
+            audioRequested = false
+        }
     }
 
-    override fun onCleared() {
-        stopLiveModules()
-        audioAnalyzer.close()
-        background.shutdownNow()
-        super.onCleared()
+    private fun currentNfcState(): NfcState {
+        val adapter = NfcAdapter.getDefaultAdapter(
+            getApplication<Application>().applicationContext,
+        )
+        return NfcState(
+            available = adapter != null,
+            enabled = adapter?.isEnabled == true,
+        )
+    }
+
+    private fun copyReportToClipboardAndPublishStatus(
+        text: String,
+        fileSaved: Boolean,
+        automatic: Boolean,
+    ) {
+        val generation = reportGeneration.incrementAndGet()
+        val clipboardResult = runCatching {
+            clipboard.setPrimaryClip(
+                ClipData.newPlainText(
+                    "A25 Lab — especificações internas",
+                    text,
+                ),
+            )
+        }
+
+        if (reportGeneration.get() != generation) return
+
+        copyStatus = when {
+            clipboardResult.isSuccess && fileSaved && automatic ->
+                "Inventário atualizado, copiado automaticamente e salvo localmente."
+            clipboardResult.isSuccess && fileSaved ->
+                "Relatório copiado e salvo localmente."
+            clipboardResult.isSuccess ->
+                "Relatório copiado; falha ao salvar o snapshot privado."
+            fileSaved ->
+                "Snapshot salvo; falha ao copiar para o clipboard."
+            else ->
+                "Falha ao copiar e ao salvar o inventário."
+        }
     }
 
     private fun post(block: () -> Unit) {
-        if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post(block)
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            block()
+        } else {
+            mainHandler.post(block)
+        }
     }
 }
 

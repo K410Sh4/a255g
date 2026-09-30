@@ -95,6 +95,7 @@ class ReportFormatterTest {
                     oisModes = listOf("OFF", "ON"),
                 ),
             ),
+            cameraProbeErrors = listOf("ID 2: probe parcial"),
             systemFeatures = listOf(SystemFeatureInfo("android.hardware.nfc", 0)),
         )
 
@@ -103,6 +104,8 @@ class ReportFormatterTest {
         assertTrue(report.contains("String type: com.samsung.sensor.vdis_gyro"))
         assertTrue(report.contains("android.hardware.nfc"))
         assertTrue(report.contains("Build fingerprint: fingerprint"))
+        assertTrue(report.contains("Falhas parciais do Camera2 probe"))
+        assertTrue(report.contains("ID 2: probe parcial"))
         assertTrue(report.contains("Não coletado: IMEI"))
     }
 }

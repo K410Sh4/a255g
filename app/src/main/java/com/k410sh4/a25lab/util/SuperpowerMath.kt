@@ -9,8 +9,15 @@ object SuperpowerMath {
     fun magnitude3(x: Float, y: Float, z: Float): Float =
         sqrt(x * x + y * y + z * z)
 
-    fun dynamicAcceleration(ax: Float, ay: Float, az: Float): Float =
+    fun dynamicAccelerationFallback(ax: Float, ay: Float, az: Float): Float =
         abs(magnitude3(ax, ay, az) - GRAVITY_EARTH)
+
+    @Deprecated(
+        message = "Use dynamicAccelerationFallback to make the approximation explicit.",
+        replaceWith = ReplaceWith("dynamicAccelerationFallback(ax, ay, az)"),
+    )
+    fun dynamicAcceleration(ax: Float, ay: Float, az: Float): Float =
+        dynamicAccelerationFallback(ax, ay, az)
 
     fun motionLevel(dynamicAccelerationMs2: Float, angularSpeedRadS: Float): String = when {
         dynamicAccelerationMs2 < 0.15f && angularSpeedRadS < 0.08f -> "quase parado"
@@ -24,5 +31,14 @@ object SuperpowerMath {
         rssi >= -65 -> "forte"
         rssi >= -78 -> "médio"
         else -> "fraco"
+    }
+
+    fun sensorAccuracyName(accuracy: Int?): String = when (accuracy) {
+        null -> "aguardando"
+        0 -> "não confiável"
+        1 -> "baixa"
+        2 -> "média"
+        3 -> "alta"
+        else -> "código $accuracy"
     }
 }

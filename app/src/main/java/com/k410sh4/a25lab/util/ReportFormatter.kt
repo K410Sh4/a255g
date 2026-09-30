@@ -14,6 +14,7 @@ object ReportFormatter {
         snapshot: DeviceSnapshot?,
         sensors: List<SensorInfo>,
         cameras: List<CameraInfo>,
+        cameraProbeErrors: List<String> = emptyList(),
         systemFeatures: List<SystemFeatureInfo> = emptyList(),
         network: NetworkState = NetworkState(),
         nfc: NfcState = NfcState(),
@@ -87,8 +88,10 @@ object ReportFormatter {
             appendLine()
 
             appendLine("[REDE ATIVA]")
-            appendLine("Conectada: ${yesNo(network.connected)}")
-            appendLine("Validada: ${yesNo(network.validated)}")
+            appendLine("Rede ativa: ${yesNo(network.connected)}")
+            appendLine("Capacidade INTERNET: ${yesNo(network.internetCapability)}")
+            appendLine("Validada pelo Android: ${yesNo(network.validated)}")
+            appendLine("Portal cativo: ${yesNo(network.captivePortal)}")
             appendLine("Medida: ${yesNo(network.metered)}")
             appendLine("Transportes: ${network.transports.joinToString().ifBlank { "N/D" }}")
             appendLine("Downstream declarado: ${network.downstreamKbps} kbps")
@@ -131,6 +134,13 @@ object ReportFormatter {
             }
             appendLine()
 
+            if (cameraProbeErrors.isNotEmpty()) {
+                appendLine("Falhas parciais do Camera2 probe:")
+                cameraProbeErrors.forEach { error ->
+                    appendLine("  - $error")
+                }
+                appendLine()
+            }
             appendLine("[SYSTEM FEATURES — ${systemFeatures.size}]")
             systemFeatures.forEach { feature ->
                 appendLine("- ${feature.name}${if (feature.version > 0) " (v${feature.version})" else ""}")

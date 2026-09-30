@@ -11,8 +11,9 @@ class NetworkProbe(context: Context) {
     fun snapshot(): NetworkState {
         val network = manager.activeNetwork ?: return NetworkState()
         val caps = manager.getNetworkCapabilities(network) ?: return NetworkState()
+
         val transports = buildList {
-            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) add("Wi‑Fi")
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) add("Wi-Fi")
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) add("Celular")
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) add("Bluetooth")
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) add("Ethernet")
@@ -20,13 +21,24 @@ class NetworkProbe(context: Context) {
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_USB)) add("USB")
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_SATELLITE)) add("Satélite")
         }
+
         return NetworkState(
-            connected = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
+            connected = true,
+            internetCapability = caps.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET,
+            ),
+            validated = caps.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED,
+            ),
+            captivePortal = caps.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL,
+            ),
             transports = transports,
             downstreamKbps = caps.linkDownstreamBandwidthKbps,
             upstreamKbps = caps.linkUpstreamBandwidthKbps,
-            validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
-            metered = !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+            metered = !caps.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_NOT_METERED,
+            ),
         )
     }
 }

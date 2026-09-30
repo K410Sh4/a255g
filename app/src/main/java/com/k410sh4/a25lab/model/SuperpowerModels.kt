@@ -1,14 +1,23 @@
 package com.k410sh4.a25lab.model
 
+enum class AccelerationSource {
+    LINEAR_SENSOR,
+    ACCELEROMETER_FALLBACK,
+    UNAVAILABLE,
+}
+
 data class SuperpowerSensorState(
     val magneticXUt: Float = 0f,
     val magneticYUt: Float = 0f,
     val magneticZUt: Float = 0f,
     val magneticStrengthUt: Float = 0f,
+    val magneticAccuracy: Int? = null,
     val dynamicAccelerationMs2: Float = 0f,
+    val accelerationSource: AccelerationSource = AccelerationSource.UNAVAILABLE,
     val angularSpeedRadS: Float = 0f,
     val lightLux: Float? = null,
     val cctRaw: Float? = null,
+    val cctRawValues: List<Float> = emptyList(),
     val yawDeg: Float = 0f,
     val pitchDeg: Float = 0f,
     val rollDeg: Float = 0f,

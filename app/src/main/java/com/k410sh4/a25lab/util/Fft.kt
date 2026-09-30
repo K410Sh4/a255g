@@ -3,27 +3,32 @@ package com.k410sh4.a25lab.util
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
 
-object Fft {
-    fun dominantFrequency(samples: ShortArray, sampleRate: Int): Float {
-        require(samples.isNotEmpty() && samples.size and (samples.size - 1) == 0) {
+class FftAnalyzer(private val size: Int) {
+    private val real = DoubleArray(size)
+    private val imag = DoubleArray(size)
+    private val window = DoubleArray(size) { index ->
+        if (size <= 1) 1.0 else 0.5 - 0.5 * cos(2.0 * PI * index / (size - 1))
+    }
+
+    init {
+        require(size > 0 && size and (size - 1) == 0) {
             "FFT size must be a power of two"
         }
+    }
+
+    fun dominantFrequency(samples: ShortArray, sampleRate: Int): Float {
+        require(samples.size == size) { "Sample count must equal FFT size" }
         require(sampleRate > 0) { "sampleRate must be positive" }
 
-        val n = samples.size
-        val real = DoubleArray(n)
-        val imag = DoubleArray(n)
-
-        for (i in 0 until n) {
-            val window = 0.5 - 0.5 * cos(2.0 * PI * i / (n - 1))
-            real[i] = samples[i].toDouble() * window
+        imag.fill(0.0)
+        for (i in 0 until size) {
+            real[i] = samples[i].toDouble() * window[i]
         }
 
         var j = 0
-        for (i in 1 until n) {
-            var bit = n shr 1
+        for (i in 1 until size) {
+            var bit = size shr 1
             while (j and bit != 0) {
                 j = j xor bit
                 bit = bit shr 1
@@ -40,12 +45,12 @@ object Fft {
         }
 
         var len = 2
-        while (len <= n) {
+        while (len <= size) {
             val angle = -2.0 * PI / len
             val wLenR = cos(angle)
             val wLenI = sin(angle)
             var i = 0
-            while (i < n) {
+            while (i < size) {
                 var wr = 1.0
                 var wi = 0.0
                 for (k in 0 until len / 2) {
@@ -69,16 +74,23 @@ object Fft {
             len = len shl 1
         }
 
-        var bestBin = 1
-        var bestMagnitude = 0.0
-        for (bin in 1 until n / 2) {
-            val magnitude = sqrt(real[bin] * real[bin] + imag[bin] * imag[bin])
-            if (magnitude > bestMagnitude) {
-                bestMagnitude = magnitude
+        var bestBin = 0
+        var bestMagnitudeSquared = 0.0
+        for (bin in 1 until size / 2) {
+            val magnitudeSquared =
+                real[bin] * real[bin] + imag[bin] * imag[bin]
+            if (magnitudeSquared > bestMagnitudeSquared) {
+                bestMagnitudeSquared = magnitudeSquared
                 bestBin = bin
             }
         }
 
-        return bestBin * sampleRate.toFloat() / n.toFloat()
+        if (bestBin == 0 || bestMagnitudeSquared <= 1.0e-12) return 0f
+        return bestBin * sampleRate.toFloat() / size.toFloat()
     }
+}
+
+object Fft {
+    fun dominantFrequency(samples: ShortArray, sampleRate: Int): Float =
+        FftAnalyzer(samples.size).dominantFrequency(samples, sampleRate)
 }

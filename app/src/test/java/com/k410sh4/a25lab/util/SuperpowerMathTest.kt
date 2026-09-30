@@ -19,6 +19,23 @@ class SuperpowerMathTest {
     }
 
     @Test
+    fun dynamicAccelerationFallback_removesOneGAtRest() {
+        assertEquals(
+            0f,
+            SuperpowerMath.dynamicAccelerationFallback(0f, 0f, 9.80665f),
+            0.0001f,
+        )
+    }
+
+    @Test
+    fun sensorAccuracyName_mapsAndroidAccuracyLevels() {
+        assertEquals("não confiável", SuperpowerMath.sensorAccuracyName(0))
+        assertEquals("baixa", SuperpowerMath.sensorAccuracyName(1))
+        assertEquals("média", SuperpowerMath.sensorAccuracyName(2))
+        assertEquals("alta", SuperpowerMath.sensorAccuracyName(3))
+    }
+
+    @Test
     fun motionLevel_classifiesStrongMotion() {
         assertEquals("movimento forte", SuperpowerMath.motionLevel(3f, 0.2f))
     }

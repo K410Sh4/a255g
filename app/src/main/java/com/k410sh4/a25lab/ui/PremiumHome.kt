@@ -133,7 +133,7 @@ fun PremiumDashboardScreen(
             CategoryCard(
                 icon = "◈",
                 title = "Percepção",
-                description = "Movimento 3D, magnetismo, luz, áudio e câmera.",
+                description = "Movimento 3D, magnetismo, luz e áudio.",
                 accent = CategoryAccent.Primary,
                 onClick = { onNavigate(Screen.Perception) },
             )
@@ -247,7 +247,7 @@ fun LabHubScreen(
         title = "Diagnóstico profundo",
         subtitle = "Ferramentas técnicas para investigar o hardware exposto.",
         cards = listOf(
-            HubItem("∿", "Sensores", "Inventário dos 34 sensores e leitura ao vivo.", Screen.Sensors),
+            HubItem("∿", "Sensores", "Inventário de sensores e leitura ao vivo.", Screen.Sensors),
             HubItem("▦", "Camera2", "Hardware level, OIS, RAW e controles.", Screen.Cameras),
             HubItem("Σ", "Compute / IA", "Baseline CPU e preparação para backends de ML.", Screen.Compute),
         ),

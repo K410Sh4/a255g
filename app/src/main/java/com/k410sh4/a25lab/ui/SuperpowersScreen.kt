@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.k410sh4.a25lab.model.AccelerationSource
 import com.k410sh4.a25lab.model.SuperpowerSensorState
 import com.k410sh4.a25lab.util.Quaternion
 import com.k410sh4.a25lab.util.QuaternionMath
@@ -141,6 +142,17 @@ fun Movement3DScreen(
                         if (sensors.orientationAvailable) "Ativo" else "Indisponível",
                     )
                     TechnicalFact(
+                        "Fonte da aceleração",
+                        when (sensors.accelerationSource) {
+                            AccelerationSource.LINEAR_SENSOR ->
+                                "TYPE_LINEAR_ACCELERATION"
+                            AccelerationSource.ACCELEROMETER_FALLBACK ->
+                                "Fallback |a| - g"
+                            AccelerationSource.UNAVAILABLE ->
+                                "Indisponível"
+                        },
+                    )
+                    TechnicalFact(
                         "AOIS",
                         if (sensors.aoisAvailable) {
                             "Detectado · HAL min ${sensors.aoisMinDelayUs ?: 0} µs"
@@ -217,8 +229,13 @@ fun EnvironmentScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
+                TechnicalFact(
+                    "Calibração",
+                    SuperpowerMath.sensorAccuracyName(sensors.magneticAccuracy),
+                )
                 Text(
-                    "Use para observar variações de campo. O valor não identifica sozinho a origem ou o material.",
+                    "A seta usa o referencial do próprio aparelho. Use para observar variações; " +
+                        "ela não identifica sozinha a origem nem o material.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -239,23 +256,29 @@ fun EnvironmentScreen(
                 LightLevelBar(sensors.lightLux ?: 0f)
 
                 TechnicalFact(
-                    "Canal CCT Samsung",
+                    "Canal vendor light_cct",
                     when {
                         !sensors.cctSensorAvailable -> "Não exposto"
                         !sensors.cctStreamActive -> "Detectado, mas sem stream"
-                        sensors.cctRaw != null -> "Valor bruto: ${f(sensors.cctRaw)}"
+                        sensors.cctRawValues.isNotEmpty() ->
+                            sensors.cctRawValues
+                                .mapIndexed { index, value ->
+                                    "v$index=${f(value)}"
+                                }
+                                .joinToString(" · ")
                         else -> "Ativo, aguardando evento"
                     },
                 )
                 Text(
-                    "O valor CCT continua tratado como bruto até a unidade e a semântica do canal vendor serem validadas.",
+                    "Nenhuma posição do vetor é chamada de temperatura de cor até validarmos " +
+                        "a semântica do sensor vendor Samsung no aparelho.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        item { Spacer(Modifier.height(24.dp)) }
+        item { Spacer        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 

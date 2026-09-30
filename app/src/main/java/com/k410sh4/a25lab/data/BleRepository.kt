@@ -6,65 +6,41 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.model.BleDeviceInfo
 import com.k410sh4.a25lab.model.BleState
 
 class BleRepository(private val context: Context) {
+    companion object {
+        private const val STALE_DEVICE_MS = 30_000L
+        private const val UI_PUBLISH_INTERVAL_MS = 250L
+        private const val MAX_DEVICES = 128
+    }
+
     private val bluetoothManager = context.getSystemService(BluetoothManager::class.java)
     private val adapter get() = bluetoothManager.adapter
     private var callback: ((BleState) -> Unit)? = null
     private var state = BleState()
     private val devices = linkedMapOf<String, BleDeviceInfo>()
+    private var lastPublishElapsedMs = 0L
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val record = result.scanRecord
-            val hasConnectPermission = hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
-
-            val address = if (hasConnectPermission) {
-                try {
-                    result.device.address
-                } catch (_: SecurityException) {
-                    "indisponível"
-                }
-            } else {
-                "indisponível"
-            }
-
-            val platformName = if (hasConnectPermission) {
-                try {
-                    result.device.name
-                } catch (_: SecurityException) {
-                    null
-                }
-            } else {
-                null
-            }
-
-            val name = record?.deviceName ?: platformName ?: "Dispositivo BLE"
-            val key = if (address != "indisponível") {
-                address
-            } else {
-                "$name:${result.rssi}:${record?.bytes?.contentHashCode()}"
-            }
-
-            devices[key] = BleDeviceInfo(
-                key = key,
-                name = name,
-                address = address,
-                rssi = result.rssi,
-                connectable = result.isConnectable,
-            )
-            publish()
+            handleResult(result)
+            publishIfDue()
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>) {
-            results.forEach { onScanResult(0, it) }
+            results.forEach(::handleResult)
+            publish()
         }
 
         override fun onScanFailed(errorCode: Int) {
-            state = state.copy(scanning = false, lastError = "Falha no scan BLE: código $errorCode")
+            state = state.copy(
+                scanning = false,
+                lastError = "Falha no scan BLE: código $errorCode",
+            )
             callback?.invoke(state)
         }
     }
@@ -72,10 +48,8 @@ class BleRepository(private val context: Context) {
     fun start(onState: (BleState) -> Unit) {
         callback = onState
 
-        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN) ||
-            !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        ) {
-            onState(BleState(lastError = "Permissões Bluetooth de scan e conexão são necessárias."))
+        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            onState(BleState(lastError = "Permissão Bluetooth de scan necessária."))
             return
         }
 
@@ -97,6 +71,7 @@ class BleRepository(private val context: Context) {
 
         stopInternal(clearCallback = false)
         devices.clear()
+        lastPublishElapsedMs = 0L
         state = BleState(scanning = true)
         callback?.invoke(state)
 
@@ -126,17 +101,66 @@ class BleRepository(private val context: Context) {
         }
 
         if (state.scanning) {
-            state = state.copy(scanning = false)
+            state = state.copy(
+                scanning = false,
+                devices = devices.values.sortedByDescending { it.rssi },
+            )
             callback?.invoke(state)
         }
         if (clearCallback) callback = null
     }
 
-    private fun hasPermission(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    private fun handleResult(result: ScanResult) {
+        val now = SystemClock.elapsedRealtime()
+        pruneStale(now)
+
+        val record = result.scanRecord
+        val name = record?.deviceName ?: "Dispositivo BLE"
+        val key = "anon:${result.device.hashCode()}"
+
+        devices[key] = BleDeviceInfo(
+            key = key,
+            name = name,
+            address = "não coletado",
+            rssi = result.rssi,
+            connectable = result.isConnectable,
+            lastSeenElapsedMs = now,
+        )
+
+        if (devices.size > MAX_DEVICES) {
+            val oldest = devices.minByOrNull { it.value.lastSeenElapsedMs }?.key
+            if (oldest != null) devices.remove(oldest)
+        }
+    }
+
+    private fun pruneStale(now: Long) {
+        val iterator = devices.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (now - entry.value.lastSeenElapsedMs > STALE_DEVICE_MS) {
+                iterator.remove()
+            }
+        }
+    }
+
+    private fun publishIfDue() {
+        val now = SystemClock.elapsedRealtime()
+        if (lastPublishElapsedMs == 0L ||
+            now - lastPublishElapsedMs >= UI_PUBLISH_INTERVAL_MS
+        ) {
+            publish()
+        }
+    }
 
     private fun publish() {
+        lastPublishElapsedMs = SystemClock.elapsedRealtime()
         state = state.copy(devices = devices.values.sortedByDescending { it.rssi })
         callback?.invoke(state)
     }
+
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(
+            context,
+            permission,
+        ) == PackageManager.PERMISSION_GRANTED
 }

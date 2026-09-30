@@ -28,6 +28,22 @@ class QuaternionMathTest {
     }
 
     @Test
+    fun smoothingAlpha_isTimeBasedAndBounded() {
+        val shortFrame = QuaternionMath.smoothingAlpha(
+            deltaTimeNs = 8_000_000L,
+            timeConstantMs = 65f,
+        )
+        val longFrame = QuaternionMath.smoothingAlpha(
+            deltaTimeNs = 50_000_000L,
+            timeConstantMs = 65f,
+        )
+
+        org.junit.Assert.assertTrue(shortFrame in 0.02f..1f)
+        org.junit.Assert.assertTrue(longFrame in 0.02f..1f)
+        org.junit.Assert.assertTrue(longFrame > shortFrame)
+    }
+
+    @Test
     fun nlerp_staysNormalized() {
         val result = QuaternionMath.nlerp(
             QuaternionMath.Identity,
