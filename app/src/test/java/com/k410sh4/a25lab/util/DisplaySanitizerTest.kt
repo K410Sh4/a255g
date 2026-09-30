@@ -37,6 +37,14 @@ class DisplaySanitizerTest {
     }
 
     @Test
+    fun safeSingleLine_removesLayoutControls() {
+        assertEquals(
+            "A B C",
+            DisplaySanitizer.safeSingleLine("A\nB\tC", 32),
+        )
+    }
+
+    @Test
     fun safeText_truncatesByCodePointWithoutSplittingEmoji() {
         assertEquals(
             "A🙂…",
