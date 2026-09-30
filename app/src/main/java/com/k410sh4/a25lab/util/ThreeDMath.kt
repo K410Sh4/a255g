@@ -33,8 +33,24 @@ object ThreeDMath {
     }
 
     fun normalize(point: Vec3): Vec3 {
-        val length = sqrt(point.x * point.x + point.y * point.y + point.z * point.z)
-        if (length <= 0.000001f) return Vec3(0f, 0f, 0f)
-        return Vec3(point.x / length, point.y / length, point.z / length)
+        if (!point.x.isFinite() ||
+            !point.y.isFinite() ||
+            !point.z.isFinite()
+        ) {
+            return Vec3(0f, 0f, 0f)
+        }
+
+        val length = sqrt(
+            point.x * point.x + point.y * point.y + point.z * point.z,
+        )
+        if (!length.isFinite() || length <= 0.000001f) {
+            return Vec3(0f, 0f, 0f)
+        }
+
+        return Vec3(
+            point.x / length,
+            point.y / length,
+            point.z / length,
+        )
     }
 }
