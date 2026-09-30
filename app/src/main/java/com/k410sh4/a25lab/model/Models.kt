@@ -105,7 +105,6 @@ data class GnssState(
 data class BleDeviceInfo(
     val key: String,
     val name: String,
-    val address: String,
     val rssi: Int,
     val connectable: Boolean?,
     val lastSeenElapsedMs: Long = 0L,
@@ -164,6 +163,7 @@ data class NfcState(
     val lastTagIdHex: String? = null,
     val technologies: List<String> = emptyList(),
     val ndefText: String? = null,
+    val lastError: String? = null,
 )
 
 fun sensorTypeName(type: Int): String = when (type) {

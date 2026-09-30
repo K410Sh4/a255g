@@ -77,10 +77,36 @@ fun Movement3DScreen(
                 title = "Pose 3D",
                 subtitle = "A representação é recentrada para a posição em que você abriu esta tela.",
             ) {
-                PhonePose3D(
-                    current = current,
-                    reference = reference ?: current,
-                )
+                if (sensors.orientationSampleReady) {
+                    PhonePose3D(
+                        current = current,
+                        reference = reference ?: current,
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.extraLarge,
+                    ) {
+                        Column(
+                            Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "Aguardando Rotation Vector…",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "O modelo 3D só aparece após a primeira amostra real de orientação.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -125,7 +151,11 @@ fun Movement3DScreen(
                 ) {
                     MetricBlock(
                         "Aceleração dinâmica",
-                        format(sensors.dynamicAccelerationMs2, "m/s²"),
+                        if (sensors.accelerationSource == AccelerationSource.UNAVAILABLE) {
+                            "N/D"
+                        } else {
+                            format(sensors.dynamicAccelerationMs2, "m/s²")
+                        },
                         Modifier.weight(1f),
                     )
                     MetricBlock(

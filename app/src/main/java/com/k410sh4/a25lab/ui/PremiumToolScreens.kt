@@ -323,7 +323,10 @@ fun PremiumNfcScreen(
         )
         CompactFact("Última tag", state.lastTagIdHex ?: "Aproxime uma tag NFC")
         CompactFact("Tecnologias", state.technologies.joinToString().ifBlank { "N/D" })
-        state.ndefText?.let { CompactFact("Texto NDEF (visualização segura)", it) }
+        state.ndefText?.let {
+            CompactFact("Texto NDEF (visualização segura)", it)
+        }
+        state.lastError?.let { ErrorMessage(it) }
         HintText("Reader Mode fica ativo somente nesta tela. Ao sair, os dados da última tag são descartados da memória da sessão.")
     }
 }

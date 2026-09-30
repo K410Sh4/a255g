@@ -1,6 +1,7 @@
 package com.k410sh4.a25lab.data
 
 import android.Manifest
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -25,7 +26,8 @@ class BleRepository(private val context: Context) {
     private val adapter get() = bluetoothManager.adapter
     private var callback: ((BleState) -> Unit)? = null
     private var state = BleState()
-    private val devices = linkedMapOf<String, BleDeviceInfo>()
+    private val devices = linkedMapOf<BluetoothDevice, BleDeviceInfo>()
+    private var nextSessionDeviceId = 0
     private var lastPublishElapsedMs = 0L
     private val maintenanceHandler = Handler(Looper.getMainLooper())
     private val maintenanceRunnable = object : Runnable {
@@ -74,6 +76,7 @@ class BleRepository(private val context: Context) {
         }
 
         devices.clear()
+        nextSessionDeviceId = 0
         lastPublishElapsedMs = 0L
         state = BleState(scanning = true)
         callback?.invoke(state)
@@ -110,7 +113,11 @@ class BleRepository(private val context: Context) {
             )
             callback?.invoke(state)
         }
-        if (clearCallback) callback = null
+        if (clearCallback) {
+            callback = null
+            devices.clear()
+            state = state.copy(devices = emptyList())
+        }
     }
 
     private fun handleResult(result: ScanResult) {
@@ -122,12 +129,13 @@ class BleRepository(private val context: Context) {
             record?.deviceName ?: "Dispositivo BLE",
             maxCodePoints = 128,
         )
-        val key = "anon:${result.device.hashCode()}"
+        val device = result.device
+        val key = devices[device]?.key
+            ?: "session:${++nextSessionDeviceId}"
 
-        devices[key] = BleDeviceInfo(
+        devices[device] = BleDeviceInfo(
             key = key,
             name = name,
-            address = "não coletado",
             rssi = result.rssi,
             connectable = result.isConnectable,
             lastSeenElapsedMs = now,

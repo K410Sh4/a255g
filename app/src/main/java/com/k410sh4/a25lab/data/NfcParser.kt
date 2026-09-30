@@ -10,25 +10,52 @@ import java.util.Locale
 object NfcParser {
     private const val MAX_NDEF_TEXT_CHARS = 4_096
     fun parse(tag: Tag, available: Boolean, enabled: Boolean): NfcState {
-        val idHex = tag.id.joinToString("") { "%02X".format(Locale.US, it.toInt() and 0xFF) }
+        val idHex = tag.id.joinToString("") {
+            "%02X".format(Locale.US, it.toInt() and 0xFF)
+        }
         val techs = tag.techList.map { it.substringAfterLast('.') }
-        val ndefText = runCatching {
-            val ndef = Ndef.get(tag) ?: return@runCatching null
-            ndef.connect()
-            try {
-                ndef.ndefMessage?.records?.firstNotNullOfOrNull { record ->
-                    decodeTextRecord(record.tnf, record.type, record.payload)
-                }
-            } finally {
-                ndef.close()
+
+        var ndefText: String? = null
+        var ndefError: String? = null
+        val ndef = runCatching { Ndef.get(tag) }
+            .onFailure {
+                ndefError = "Falha ao abrir NDEF: ${it::class.java.simpleName}"
             }
-        }.getOrNull()
+            .getOrNull()
+
+        if (ndef != null) {
+            try {
+                ndef.connect()
+                ndefText = ndef.ndefMessage
+                    ?.records
+                    ?.firstNotNullOfOrNull { record ->
+                        decodeTextRecord(
+                            record.tnf,
+                            record.type,
+                            record.payload,
+                        )
+                    }
+            } catch (error: Exception) {
+                ndefError =
+                    "Falha ao ler NDEF: ${error::class.java.simpleName}"
+            } finally {
+                runCatching { ndef.close() }
+                    .onFailure { closeError ->
+                        if (ndefError == null) {
+                            ndefError =
+                                "Falha ao fechar NDEF: ${closeError::class.java.simpleName}"
+                        }
+                    }
+            }
+        }
+
         return NfcState(
             available = available,
             enabled = enabled,
             lastTagIdHex = idHex,
             technologies = techs,
             ndefText = ndefText,
+            lastError = ndefError,
         )
     }
 

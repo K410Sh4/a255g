@@ -122,3 +122,13 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 71. **Build dependia de Gradle global** — o repositório não possuía Wrapper, então ambiente local e CI podiam usar distribuições diferentes. Foram adicionados os arquivos oficiais do Gradle Wrapper 9.6.0, incluindo JAR versionado, scripts POSIX/Windows e `distributionSha256Sum` da distribuição binária.
 72. **CI ainda ignorava o Wrapper recém-adicionado** — build, lint, unit tests e instrumentation agora chamam `./gradlew`; `setup-gradle` permanece apenas para cache/diagnóstico e valida automaticamente o JAR oficial.
 73. **Documentação operacional estava defasada** — README ainda citava `BLUETOOTH_CONNECT`, `filesDir` e instalação global de Gradle. A documentação foi alinhada ao manifesto, `noBackupFilesDir`, Wrapper e smoke tests Android 16.
+
+
+74. **Contrato BLE ainda permitia armazenar endereço** — o modelo de dispositivo ainda possuía campo `address`, mesmo preenchido com texto neutro. O campo foi removido do contrato. A deduplicação mantém apenas o objeto `BluetoothDevice` durante a sessão e publica um ID sequencial efêmero, nunca o endereço.
+75. **Dimensões de tela podiam refletir a janela do app** — `resources.displayMetrics` não é a fonte ideal para especificação física. O snapshot agora prioriza `Display.Mode.physicalWidth/physicalHeight/refreshRate`, com fallback seguro.
+76. **Falha no fechamento NDEF apagava uma leitura válida** — leitura e fechamento foram separados; texto já decodificado é preservado e erros de open/read/close aparecem como diagnóstico sem entrar no inventário persistido.
+77. **3D renderizava identidade durante reinicialização do sensor** — após resume podia existir um frame com quaternion identidade. A tela agora aguarda a primeira amostra real antes de renderizar a pose e mostra estado de espera legível.
+78. **Métrica de aceleração indisponível parecia zero real** — quando nenhum sensor/fallback estava disponível, a UI mostrava `0 m/s²`. Agora exibe `N/D`.
+79. **Intensidade magnética zero ainda desenhava halo mínimo** — a escala visual passa a zero de verdade, evitando indicar campo não medido antes da primeira amostra.
+80. **Atualizações de dependências eram manuais** — foi adicionada configuração do Dependabot para Gradle e GitHub Actions em cadência semanal, sem auto-merge.
+81. **Privacidade BLE sem regressão estrutural** — teste unitário verifica que `BleDeviceInfo` não volte a expor um campo `address`.
