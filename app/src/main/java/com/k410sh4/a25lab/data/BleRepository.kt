@@ -102,7 +102,7 @@ class BleRepository(private val context: Context) {
             state = BleState(lastError = "Acesso Bluetooth negado.")
             callback?.invoke(state)
         } catch (error: RuntimeException) {
-                state = BleState(
+            state = BleState(
                 lastError = "Falha ao iniciar BLE: ${error::class.java.simpleName}",
             )
             callback?.invoke(state)
@@ -113,7 +113,6 @@ class BleRepository(private val context: Context) {
 
     private fun stopInternal(clearCallback: Boolean) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        unregisterAdapterStateReceiver()
         runCatching {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
         }
@@ -136,7 +135,6 @@ class BleRepository(private val context: Context) {
 
     private fun finishScanWithError(message: String) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        unregisterAdapterStateReceiver()
         runCatching {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
         }

@@ -156,7 +156,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 
 95. **Estado NFC podia ficar desatualizado com Quick Settings** — ligar/desligar NFC sem pausar a Activity não garantia novo `onResume`. A Activity agora observa `ACTION_ADAPTER_STATE_CHANGED`, atualiza a UI e sincroniza Reader Mode em tempo real.
-96. **Scan BLE podia ficar marcado como ativo após desligar o Bluetooth** — o repositório agora observa `BluetoothAdapter.ACTION_STATE_CHANGED`, encerra scan/maintenance, publica erro legível e limpa referências internas da sessão.
+96. **Scan BLE podia ficar marcado como ativo após desligar o Bluetooth** — a manutenção periódica verifica se o scanner continua disponível; se o adaptador for desligado ou o scanner desaparecer, a sessão é encerrada com diagnóstico e referências internas são limpas.
 97. **Separadores Unicode U+2028/U+2029 escapavam da sanitização** — ambos passam a ser neutralizados como controles de layout, com regressão unitária.
 98. **NDEF grande era decodificado integralmente antes do limite visual** — o parser limita a janela de decodificação a 16 KiB, preserva limite visual de 4096 caracteres e indica truncamento.
 99. **Decoder NDEF não tinha cobertura unitária direta** — foram adicionados testes para Text RTD UTF-8, payload malformado, controles bidi e truncamento.
@@ -180,3 +180,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 106. **Solicitação concorrente de permissões podia sobrescrever a ação pendente** — a UI agora mantém um estado de requisição em andamento e ignora novos launches até a resposta do Android, evitando substituir a ação associada ao diálogo aberto.
 107. **Smoke test de navegação dependia de texto não único** — “Percepção” também aparece no conteúdo do dashboard. A navegação inferior ganhou tags semânticas estáveis de teste e o smoke test passou a usá-las.
 108. **Texto de ambiente ainda chamava o canal vendor de CCT validado** — a UI foi alinhada à auditoria: o canal permanece identificado como `light_cct` até sua semântica ser confirmada no SM-A256E.
+
+
+109. **Cleanup BLE continha chamada órfã após simplificação do monitoramento** — chamadas para um receiver já removido permaneceram em stop/erro e quebravam compilação. O cleanup agora depende apenas do scanner + maintenance loop realmente existentes.
+110. **Conclusão antiga do benchmark podia sobrescrever uma execução nova** — cancelamento e reinício rápido agora usam geração monotônica; callbacks de uma execução obsoleta não podem zerar o estado nem apagar o Future da execução atual.

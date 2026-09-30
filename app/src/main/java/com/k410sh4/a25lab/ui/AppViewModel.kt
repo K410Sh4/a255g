@@ -62,6 +62,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
     private val reportGeneration = AtomicLong(0L)
     private val nfcReadGeneration = AtomicLong(0L)
+    private val computeGeneration = AtomicLong(0L)
 
     @Volatile
     private var cleared = false
@@ -450,6 +451,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         computeRunning = true
         computeResult = null
         computeError = null
+        val generation = computeGeneration.incrementAndGet()
 
         try {
             computeFuture = computeExecutor.submit {
@@ -458,6 +460,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 post {
+                    if (computeGeneration.get() != generation) {
+                        return@post
+                    }
+
                     val error = attempt.exceptionOrNull()
                     if (error !is CancellationException) {
                         computeResult = attempt.getOrNull()
@@ -470,12 +476,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } catch (_: RejectedExecutionException) {
-            computeRunning = false
-            computeError = "Executor de benchmark indisponível."
+            if (computeGeneration.get() == generation) {
+                computeRunning = false
+                computeError = "Executor de benchmark indisponível."
+            }
         }
     }
 
     fun cancelCpuBaseline() {
+        computeGeneration.incrementAndGet()
         computeFuture?.cancel(true)
         computeFuture = null
         computeRunning = false
