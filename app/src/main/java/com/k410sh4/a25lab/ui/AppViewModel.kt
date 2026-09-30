@@ -233,8 +233,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val networkSnapshot = runCatching {
                 networkProbe.snapshot()
             }.getOrElse { error ->
-                warnings += probeFailure("Rede", error)
-                NetworkState()
+                val warning = probeFailure("Rede", error)
+                warnings += warning
+                NetworkState(lastError = warning)
             }
 
             val deviceSnapshot = runCatching {
@@ -297,7 +298,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshNetwork() {
         network = runCatching {
             networkProbe.snapshot()
-        }.getOrDefault(NetworkState())
+        }.getOrElse { error ->
+            NetworkState(
+                lastError = probeFailure("Rede", error),
+            )
+        }
     }
 
     fun copySpecificationsToClipboard() {
