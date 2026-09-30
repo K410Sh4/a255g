@@ -52,12 +52,12 @@ object ReportFormatter {
             appendLine("OpenGL ES: ${snapshot.glEsVersion}")
             appendLine()
 
-            appendLine("[MEMÓRIA / ARMAZENAMENTO]")
+            appendLine("[MEMÓRIA / PARTIÇÃO DE DADOS]")
             appendLine("RAM total: ${formatBytes(snapshot.totalMemoryBytes)}")
             appendLine("RAM disponível: ${formatBytes(snapshot.availableMemoryBytes)}")
             appendLine("Low-RAM device: ${yesNo(snapshot.lowRamDevice)}")
-            appendLine("Armazenamento total: ${formatBytes(snapshot.totalStorageBytes)}")
-            appendLine("Armazenamento livre: ${formatBytes(snapshot.freeStorageBytes)}")
+            appendLine("Partição de dados total: ${formatBytes(snapshot.totalStorageBytes)}")
+            appendLine("Partição de dados livre: ${formatBytes(snapshot.freeStorageBytes)}")
             appendLine()
 
             appendLine("[TELA]")

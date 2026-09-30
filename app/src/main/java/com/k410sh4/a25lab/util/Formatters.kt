@@ -6,7 +6,7 @@ import kotlin.math.pow
 
 fun formatBytes(bytes: Long): String {
     if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val units = arrayOf("B", "KiB", "MiB", "GiB", "TiB")
     val digitGroup = (ln(bytes.toDouble()) / ln(1024.0)).toInt().coerceIn(0, units.lastIndex)
     val value = bytes / 1024.0.pow(digitGroup.toDouble())
     return String.format(Locale.US, "%.2f %s", value, units[digitGroup])

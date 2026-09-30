@@ -6,8 +6,8 @@ import org.junit.Test
 class FormattersTest {
     @Test
     fun formatBytes_formatsBinaryUnits() {
-        assertEquals("1.00 KB", formatBytes(1024))
-        assertEquals("1.00 MB", formatBytes(1024L * 1024L))
+        assertEquals("1.00 KiB", formatBytes(1024))
+        assertEquals("1.00 MiB", formatBytes(1024L * 1024L))
     }
 
     @Test

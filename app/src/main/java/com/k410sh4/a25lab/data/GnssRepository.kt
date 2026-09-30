@@ -215,12 +215,17 @@ class GnssRepository(private val context: Context) {
                 ),
             )
         } else if (!state.locationEnabled) {
-            update(
-                state.copy(
-                    locationEnabled = true,
-                    lastError = null,
-                ),
-            )
+            val activeCallback = callback
+            if (activeCallback != null) {
+                start(activeCallback)
+            } else {
+                update(
+                    state.copy(
+                        locationEnabled = true,
+                        lastError = null,
+                    ),
+                )
+            }
         }
     }
 

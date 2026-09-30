@@ -57,7 +57,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     )
     private val reportGeneration = AtomicLong(0L)
 
-    private var inForeground = true
+    private var inForeground = false
     private var gnssRequested = false
     private var bleRequested = false
     private var audioRequested = false
