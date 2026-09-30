@@ -134,4 +134,9 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 81. **Privacidade BLE sem regressão estrutural** — teste unitário verifica que `BleDeviceInfo` não volte a expor um campo `address`.
 
 
-74. **Zero magnético de inicialização parecia uma leitura real** — antes do primeiro evento do magnetômetro a tela podia exibir `0 µT`, embora nenhuma amostra tivesse chegado. O estado agora possui `magneticSampleReady` e a visualização aguarda explicitamente a primeira medição.
+82. **Zero magnético de inicialização parecia uma leitura real** — antes do primeiro evento do magnetômetro a tela podia exibir `0 µT`, embora nenhuma amostra tivesse chegado. O estado agora possui `magneticSampleReady` e a visualização aguarda explicitamente a primeira medição.
+
+
+83. **Avisos do probe eram passados ao formatter mas não exportados** — o ViewModel já acumulava falhas de sensores/rede/build, porém o relatório ignorava `probeWarnings`. O inventário agora inclui uma seção `[AVISOS DO PROBE]` sanitizada.
+84. **Falha manual de rede parecia simplesmente “sem rede”** — exceções do refresh manual eram convertidas silenciosamente em estado vazio. `NetworkState` agora carrega diagnóstico e a tela/relatório diferenciam falha de probe de ausência real de conexão.
+85. **Camera2 ainda podia persistir mensagens arbitrárias de exceção** — os erros por ID/global agora registram somente a classe da exceção, preservando diagnóstico sem copiar mensagens internas potencialmente sensíveis.
