@@ -152,12 +152,12 @@ fun A25LabApp(viewModel: AppViewModel) {
                         modifier = Modifier.padding(padding),
                         sensors = viewModel.superpowers,
                     )
-                    Screen.Sensors -> SensorsScreen(
+                    Screen.Sensors -> PremiumSensorsScreen(
                         Modifier.padding(padding),
                         viewModel.sensors,
                         viewModel.motion,
                     )
-                    Screen.Gnss -> GnssScreen(
+                    Screen.Gnss -> PremiumGnssScreen(
                         Modifier.padding(padding),
                         viewModel.gnss,
                         onStart = {
@@ -171,7 +171,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         },
                         onStop = viewModel::stopGnss,
                     )
-                    Screen.Bluetooth -> BleScreen(
+                    Screen.Bluetooth -> PremiumBleScreen(
                         Modifier.padding(padding),
                         viewModel.ble,
                         onStart = {
@@ -185,7 +185,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         },
                         onStop = viewModel::stopBle,
                     )
-                    Screen.Audio -> AudioScreen(
+                    Screen.Audio -> PremiumAudioScreen(
                         Modifier.padding(padding),
                         viewModel.audio,
                         onStart = {
@@ -193,14 +193,14 @@ fun A25LabApp(viewModel: AppViewModel) {
                         },
                         onStop = viewModel::stopAudio,
                     )
-                    Screen.Cameras -> CamerasScreen(Modifier.padding(padding), viewModel.cameras)
-                    Screen.Nfc -> NfcScreen(Modifier.padding(padding), viewModel.nfc)
-                    Screen.Network -> NetworkScreen(
+                    Screen.Cameras -> PremiumCamerasScreen(Modifier.padding(padding), viewModel.cameras)
+                    Screen.Nfc -> PremiumNfcScreen(Modifier.padding(padding), viewModel.nfc)
+                    Screen.Network -> PremiumNetworkScreen(
                         Modifier.padding(padding),
                         viewModel.network,
                         onRefresh = viewModel::refreshNetwork,
                     )
-                    Screen.Compute -> ComputeScreen(
+                    Screen.Compute -> PremiumComputeScreen(
                         Modifier.padding(padding),
                         viewModel.computeRunning,
                         viewModel.computeResult?.elapsedMs,
