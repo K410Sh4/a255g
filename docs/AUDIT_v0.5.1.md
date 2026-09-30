@@ -140,3 +140,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 83. **Avisos do probe eram passados ao formatter mas não exportados** — o ViewModel já acumulava falhas de sensores/rede/build, porém o relatório ignorava `probeWarnings`. O inventário agora inclui uma seção `[AVISOS DO PROBE]` sanitizada.
 84. **Falha manual de rede parecia simplesmente “sem rede”** — exceções do refresh manual eram convertidas silenciosamente em estado vazio. `NetworkState` agora carrega diagnóstico e a tela/relatório diferenciam falha de probe de ausência real de conexão.
 85. **Camera2 ainda podia persistir mensagens arbitrárias de exceção** — os erros por ID/global agora registram somente a classe da exceção, preservando diagnóstico sem copiar mensagens internas potencialmente sensíveis.
+
+
+86. **Áudio parado parecia uma medição real** — o estado inicial exibia `0 Hz` e `-120 dBFS` mesmo sem captura ativa. Frequência e nível agora mostram `N/D` até existir uma sessão de áudio em execução.
+87. **GNSS não verificado parecia estado real** — os defaults diziam implicitamente “localização ativada / GPS indisponível / raw não suportado” antes de qualquer probe. Esses campos passaram a aceitar estado desconhecido e a UI mostra “não verificado” até uma tentativa real.
