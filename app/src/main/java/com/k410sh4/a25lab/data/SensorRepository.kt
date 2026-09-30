@@ -230,6 +230,7 @@ class SensorRepository(context: Context) : SensorEventListener {
                         values[1],
                         values[2],
                     ),
+                    magneticSampleReady = true,
                 )
             }
             event.sensor.type == Sensor.TYPE_LIGHT && values.isNotEmpty() -> {
