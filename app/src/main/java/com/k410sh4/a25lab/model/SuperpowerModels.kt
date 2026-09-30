@@ -11,6 +11,7 @@ data class SuperpowerSensorState(
     val magneticYUt: Float = 0f,
     val magneticZUt: Float = 0f,
     val magneticStrengthUt: Float = 0f,
+    val magneticSampleReady: Boolean = false,
     val magneticAccuracy: Int? = null,
     val dynamicAccelerationMs2: Float = 0f,
     val accelerationSource: AccelerationSource = AccelerationSource.UNAVAILABLE,
