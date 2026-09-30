@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val ioExecutor = Executors.newSingleThreadExecutor()
+    private val nfcExecutor = Executors.newSingleThreadExecutor()
     private val computeExecutor = Executors.newSingleThreadExecutor()
 
     private val sensorsRepository = SensorRepository(application.applicationContext)
@@ -393,7 +394,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val state = currentNfcState()
         val readGeneration = nfcReadGeneration.incrementAndGet()
 
-        ioExecutor.execute {
+        nfcExecutor.execute {
             val parsed = NfcParser.parse(
                 tag = tag,
                 available = state.available,
@@ -458,6 +459,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         stopLiveModules(clearUserRequests = true)
         audioAnalyzer.close()
         ioExecutor.shutdownNow()
+        nfcExecutor.shutdownNow()
         computeExecutor.shutdownNow()
         mainHandler.removeCallbacksAndMessages(null)
         pendingAutomaticReport = null

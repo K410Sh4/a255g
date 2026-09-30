@@ -113,3 +113,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 66. **Percentual de bateria não era limitado** — valores anômalos vindos do sticky intent podiam produzir porcentagem fora de 0–100. O snapshot agora faz clamp defensivo.
 67. **Strings locais podiam corromper a estrutura do relatório exportado** — campos de build, sensores, câmeras, erros e system features passam pelo mesmo sanitizador de linha única antes de copiar/compartilhar.
 68. **Sanitizador de linha única não tinha regressão própria** — foi adicionado teste garantindo remoção de newline/tab sem quebrar Unicode normal.
+
+
+69. **Leitura NFC compartilhava executor com inventário/persistência** — uma operação de tag lenta podia atrasar refresh do hardware e escrita do snapshot. NFC agora possui executor dedicado e lifecycle próprio.
+70. **Instrumentation era apenas compilada, não executada** — a CI ganhou um job separado em emulador Android 16/API 36 que executa `connectedDebugAndroidTest` após build/unit/lint. A action do emulador também está fixada em commit imutável.
