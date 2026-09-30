@@ -167,7 +167,7 @@ class SensorRepository(context: Context) : SensorEventListener {
     private fun updateMotion(event: SensorEvent) {
         val callback = motionCallback ?: return
         val values = event.values
-        if (values.size < 3) return
+        if (values.size < 3 || !valuesAreFinite(values, 3)) return
 
         latestMotion = when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> latestMotion.copy(
@@ -201,7 +201,9 @@ class SensorRepository(context: Context) : SensorEventListener {
         val values = event.values
 
         latestSuperpower = when {
-            event.sensor.type == Sensor.TYPE_LINEAR_ACCELERATION && values.size >= 3 -> {
+            event.sensor.type == Sensor.TYPE_LINEAR_ACCELERATION &&
+                values.size >= 3 &&
+                valuesAreFinite(values, 3) -> {
                 latestSuperpower.copy(
                     dynamicAccelerationMs2 = SuperpowerMath.magnitude3(
                         values[0],
@@ -214,7 +216,8 @@ class SensorRepository(context: Context) : SensorEventListener {
             }
             event.sensor.type == Sensor.TYPE_ACCELEROMETER &&
                 !usingLinearAccelerationSensor &&
-                values.size >= 3 -> {
+                values.size >= 3 &&
+                valuesAreFinite(values, 3) -> {
                 latestSuperpower.copy(
                     dynamicAccelerationMs2 = SuperpowerMath.dynamicAccelerationFallback(
                         values[0],
@@ -225,7 +228,9 @@ class SensorRepository(context: Context) : SensorEventListener {
                     accelerationSampleReady = true,
                 )
             }
-            event.sensor.type == Sensor.TYPE_GYROSCOPE && values.size >= 3 -> {
+            event.sensor.type == Sensor.TYPE_GYROSCOPE &&
+                values.size >= 3 &&
+                valuesAreFinite(values, 3) -> {
                 latestSuperpower.copy(
                     angularSpeedRadS = SuperpowerMath.magnitude3(
                         values[0],
@@ -235,7 +240,9 @@ class SensorRepository(context: Context) : SensorEventListener {
                     angularSampleReady = true,
                 )
             }
-            event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD && values.size >= 3 -> {
+            event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD &&
+                values.size >= 3 &&
+                valuesAreFinite(values, 3) -> {
                 latestSuperpower.copy(
                     magneticXUt = values[0],
                     magneticYUt = values[1],
@@ -248,10 +255,14 @@ class SensorRepository(context: Context) : SensorEventListener {
                     magneticSampleReady = true,
                 )
             }
-            event.sensor.type == Sensor.TYPE_LIGHT && values.isNotEmpty() -> {
+            event.sensor.type == Sensor.TYPE_LIGHT &&
+                values.isNotEmpty() &&
+                values[0].isFinite() -> {
                 latestSuperpower.copy(lightLux = values[0])
             }
-            event.sensor.type == Sensor.TYPE_ROTATION_VECTOR && values.size >= 3 -> {
+            event.sensor.type == Sensor.TYPE_ROTATION_VECTOR &&
+                values.size >= 3 &&
+                valuesAreFinite(values, minOf(values.size, 4)) -> {
                 SensorManager.getQuaternionFromVector(rotationQuaternion, values)
 
                 val rawQuaternion = QuaternionMath.normalize(
@@ -328,6 +339,17 @@ class SensorRepository(context: Context) : SensorEventListener {
     private fun registerDefault(type: Int, rate: Int): Boolean {
         val sensor = manager.getDefaultSensor(type) ?: return false
         return manager.registerListener(this, sensor, rate)
+    }
+
+    private fun valuesAreFinite(
+        values: FloatArray,
+        count: Int,
+    ): Boolean {
+        val limit = minOf(count, values.size)
+        for (index in 0 until limit) {
+            if (!values[index].isFinite()) return false
+        }
+        return true
     }
 
     private fun radiansToDegrees(value: Float): Float =
