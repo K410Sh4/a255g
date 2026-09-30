@@ -22,3 +22,11 @@ fun thermalStatusName(status: Int): String = when (status) {
     6 -> "Desligamento"
     else -> "Desconhecido ($status)"
 }
+
+
+fun glEsVersionName(encodedVersion: Int): String {
+    if (encodedVersion <= 0) return "N/D"
+    val major = encodedVersion shr 16
+    val minor = encodedVersion and 0xFFFF
+    return "$major.$minor"
+}
