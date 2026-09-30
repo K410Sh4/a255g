@@ -211,7 +211,6 @@ fun PerceptionHubScreen(
             HubItem("◎", "Movimento & 3D", "Pose 3D, aceleração, rotação, AOIS e VDIS.", Screen.Superpowers),
             HubItem("◇", "Ambiente", "Campo magnético 3D, luz e canal CCT Samsung.", Screen.Environment),
             HubItem("≈", "Áudio", "RMS, frequência dominante e FFT local.", Screen.Audio),
-            HubItem("▣", "Câmeras", "Capacidades reais expostas pela Camera2 HAL.", Screen.Cameras),
         ),
         onNavigate = onNavigate,
     )
