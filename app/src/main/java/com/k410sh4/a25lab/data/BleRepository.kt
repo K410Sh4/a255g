@@ -20,11 +20,35 @@ class BleRepository(private val context: Context) {
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val record = result.scanRecord
-            val address = runCatching { result.device.address }.getOrDefault("indisponível")
-            val name = record?.deviceName
-                ?: runCatching { result.device.name }.getOrNull()
-                ?: "Dispositivo BLE"
-            val key = if (address != "indisponível") address else "$name:${result.rssi}:${record?.bytes?.contentHashCode()}"
+            val hasConnectPermission = hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+
+            val address = if (hasConnectPermission) {
+                try {
+                    result.device.address
+                } catch (_: SecurityException) {
+                    "indisponível"
+                }
+            } else {
+                "indisponível"
+            }
+
+            val platformName = if (hasConnectPermission) {
+                try {
+                    result.device.name
+                } catch (_: SecurityException) {
+                    null
+                }
+            } else {
+                null
+            }
+
+            val name = record?.deviceName ?: platformName ?: "Dispositivo BLE"
+            val key = if (address != "indisponível") {
+                address
+            } else {
+                "$name:${result.rssi}:${record?.bytes?.contentHashCode()}"
+            }
+
             devices[key] = BleDeviceInfo(
                 key = key,
                 name = name,
@@ -47,45 +71,69 @@ class BleRepository(private val context: Context) {
 
     fun start(onState: (BleState) -> Unit) {
         callback = onState
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+
+        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN) ||
+            !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
         ) {
             onState(BleState(lastError = "Permissões Bluetooth de scan e conexão são necessárias."))
             return
         }
+
         val currentAdapter = adapter
         if (currentAdapter == null) {
             onState(BleState(lastError = "Bluetooth não disponível."))
             return
         }
-        if (!currentAdapter.isEnabled) {
+
+        val enabled = try {
+            currentAdapter.isEnabled
+        } catch (_: SecurityException) {
+            false
+        }
+        if (!enabled) {
             onState(BleState(lastError = "Ative o Bluetooth para iniciar o scan."))
             return
         }
+
         stopInternal(clearCallback = false)
         devices.clear()
         state = BleState(scanning = true)
         callback?.invoke(state)
+
         try {
-            currentAdapter.bluetoothLeScanner?.startScan(scanCallback)
-                ?: onState(BleState(lastError = "Scanner BLE indisponível."))
+            val scanner = currentAdapter.bluetoothLeScanner
+            if (scanner == null) {
+                state = BleState(lastError = "Scanner BLE indisponível.")
+                callback?.invoke(state)
+                return
+            }
+            scanner.startScan(scanCallback)
         } catch (security: SecurityException) {
-            onState(BleState(lastError = security.message ?: "Acesso Bluetooth negado."))
+            state = BleState(lastError = security.message ?: "Acesso Bluetooth negado.")
+            callback?.invoke(state)
         }
     }
 
     fun stop() = stopInternal(clearCallback = true)
 
     private fun stopInternal(clearCallback: Boolean) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
-            runCatching { adapter?.bluetoothLeScanner?.stopScan(scanCallback) }
+        if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            try {
+                adapter?.bluetoothLeScanner?.stopScan(scanCallback)
+            } catch (_: SecurityException) {
+                // A permissão pode ser revogada entre a checagem e a chamada.
+            }
         }
+
         if (state.scanning) {
             state = state.copy(scanning = false)
             callback?.invoke(state)
         }
         if (clearCallback) callback = null
     }
+
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun publish() {
         state = state.copy(devices = devices.values.sortedByDescending { it.rssi })
