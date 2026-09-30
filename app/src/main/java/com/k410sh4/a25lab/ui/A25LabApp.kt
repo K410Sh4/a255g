@@ -118,7 +118,13 @@ fun A25LabApp(viewModel: AppViewModel) {
                         Modifier.padding(padding),
                         viewModel.gnss,
                         onStart = {
-                            runWithPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), viewModel::startGnss)
+                            runWithPermissions(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                ),
+                                viewModel::startGnss,
+                            )
                         },
                         onStop = viewModel::stopGnss,
                     )
