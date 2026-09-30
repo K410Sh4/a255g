@@ -454,6 +454,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun clearNfcFailure() {
+        if (nfc.lastError != null) {
+            nfc = nfc.copy(lastError = null)
+        }
+    }
+
+    fun reportNfcFailure(
+        operation: String,
+        error: Throwable,
+    ) {
+        if (cleared) return
+        nfc = nfc.copy(
+            lastError = "$operation: ${error::class.java.simpleName}",
+        )
+    }
+
     fun runCpuBaseline() {
         if (computeRunning || cleared) return
 

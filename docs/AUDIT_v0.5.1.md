@@ -201,3 +201,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 125. **Run #93 confirmou dois MissingPermission no cleanup BLE** — o lint não considera `runCatching` evidência suficiente de tratamento de permissão para `stopScan`. Os dois pontos agora usam `try/catch` explícito para `SecurityException` e `RuntimeException`, mantendo cleanup best-effort sem adicionar `BLUETOOTH_CONNECT`.
 126. **Wrapper ficou atrás da distribuição estável detectada pelo lint** — a distribuição foi atualizada de Gradle 9.6.0 para 9.8.0 com SHA-256 oficial fixado no `gradle-wrapper.properties`. O JAR launcher continua sendo validado pela action `setup-gradle`.
+
+127. **Run #94 falhou por falso positivo no teste de Activities exportadas** — o APK de teste inclui Activities de dependências AndroidX em build debug. O contrato de segurança foi corrigido para exigir que, dentro do pacote do próprio A25 Lab, apenas `MainActivity` esteja exportada. O run #95 confirmou build, unit tests, lint e smoke tests Android 16 em verde.
+128. **Falhas do NFC Reader Mode eram silenciosas** — erros ao registrar o observador de estado NFC ou ativar Reader Mode agora aparecem na tela NFC usando apenas o tipo da exceção, sem copiar mensagens arbitrárias do sistema.
+129. **Canal vendor `light_cct` aceitava NaN/Infinity** — amostras não finitas desse vetor agora são descartadas antes de entrar no estado/UI, alinhando o canal vendor à proteção já usada nos demais sensores.
+130. **README contradizia o Wrapper real** — a seção de build ainda citava Gradle 9.6.0 após a atualização para 9.8.0 e omitia a permissão coarse solicitada junto da fine. A documentação foi alinhada ao manifesto e ao wrapper atual.

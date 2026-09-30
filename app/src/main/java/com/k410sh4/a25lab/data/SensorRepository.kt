@@ -324,7 +324,9 @@ class SensorRepository(context: Context) : SensorEventListener {
                     orientationSampleReady = true,
                 )
             }
-            event.sensor.stringType == CCT_STRING_TYPE && values.isNotEmpty() -> {
+            event.sensor.stringType == CCT_STRING_TYPE &&
+                values.isNotEmpty() &&
+                valuesAreFinite(values, values.size) -> {
                 val rawValues = values.copyOf().toList()
                 latestSuperpower.copy(
                     cctRaw = rawValues.firstOrNull(),

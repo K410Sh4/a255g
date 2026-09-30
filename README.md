@@ -39,7 +39,7 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 
 ## Permissões
 
-- `ACCESS_FINE_LOCATION`: callbacks GNSS e medições brutas.
+- `ACCESS_COARSE_LOCATION` + `ACCESS_FINE_LOCATION`: par solicitado pelo Android para permitir localização precisa; o A25 Lab usa a precisão apenas para ativar callbacks GNSS/medições brutas e descarta coordenadas.
 - `BLUETOOTH_SCAN`: descoberta BLE passiva. O app não solicita `BLUETOOTH_CONNECT` e não tenta conectar aos dispositivos encontrados.
 - `RECORD_AUDIO`: Audio Lab local.
 - `NFC`: leitura de tags em primeiro plano.
@@ -49,7 +49,7 @@ O probe Camera2 consulta apenas características e, por isso, não pede permiss�
 
 ## Build local
 
-Requer JDK 17, Android SDK 36 e Build Tools 36.0.0. O repositório inclui o Gradle Wrapper 9.6.0 com checksum da distribuição fixado.
+Requer JDK 17, Android SDK 36 e Build Tools 36.0.0. O repositório inclui o Gradle Wrapper 9.8.0 com checksum da distribuição fixado.
 
 ```bash
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
