@@ -12,6 +12,7 @@ import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.k410sh4.a25lab.model.BleDeviceInfo
 import com.k410sh4.a25lab.model.BleState
+import com.k410sh4.a25lab.util.DisplaySanitizer
 
 class BleRepository(private val context: Context) {
     companion object {
@@ -119,7 +120,10 @@ class BleRepository(private val context: Context) {
         pruneStale(now)
 
         val record = result.scanRecord
-        val name = record?.deviceName ?: "Dispositivo BLE"
+        val name = DisplaySanitizer.safeText(
+            record?.deviceName ?: "Dispositivo BLE",
+            maxCodePoints = 128,
+        )
         val key = "anon:${result.device.hashCode()}"
 
         devices[key] = BleDeviceInfo(

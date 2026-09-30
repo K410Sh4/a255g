@@ -111,6 +111,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (screen == target) return
 
         val leavingNfc = screen == Screen.Nfc && target != Screen.Nfc
+        val leavingBle =
+            screen == Screen.Bluetooth && target != Screen.Bluetooth
         stopLiveModules(clearUserRequests = true)
         if (leavingNfc) {
             nfcReadGeneration.incrementAndGet()
@@ -120,9 +122,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 enabled = current.enabled,
             )
         }
+        if (leavingBle) {
+            ble = BleState()
+        }
         screen = target
 
         if (target == Screen.Network) refreshNetwork()
+        if (target == Screen.Nfc) refreshNfcState()
         if (inForeground) startAutomaticModulesForCurrentScreen()
     }
 
@@ -130,6 +136,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         inForeground = false
         nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = false)
+
+        ble = BleState()
+        nfc = NfcState(
+            available = nfc.available,
+            enabled = nfc.enabled,
+        )
     }
 
     fun onAppForeground() {

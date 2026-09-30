@@ -83,3 +83,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 47. **GNSS podia permanecer passivo** — registrar `GnssStatus` e `GnssMeasurementsEvent` não garante que o receptor físico seja iniciado quando nenhum cliente de localização está ativo. O botão Iniciar agora cria uma solicitação GPS explícita, limitada à tela/foreground, enquanto as coordenadas retornadas são descartadas imediatamente.
 48. **Privacidade GNSS/NFC descrita de forma ampla demais** — o relatório agora diferencia inventário persistido de dados transitórios: coordenadas GNSS são descartadas e UID/NDEF de NFC não entram no inventário.
+
+
+49. **Texto vindo de rádio/NFC era tratado como confiável** — nomes BLE e NDEF são entradas externas e podiam carregar controles Unicode/bidi capazes de confundir a apresentação. Foi criado um sanitizador de display que preserva Unicode normal, torna controles perigosos visíveis e limita tamanho por code point.
+50. **Dados BLE transitórios permaneciam no ViewModel após sair** — nomes/RSSI agora são removidos ao deixar a tela Bluetooth ou enviar o app ao background. O scan pode ser retomado pela intenção do usuário, mas começa com estado visual limpo.
+51. **Estado NFC podia ficar desatualizado ao entrar na tela** — a disponibilidade/estado do adaptador é atualizada ao navegar para NFC, além da atualização no resume.

@@ -174,7 +174,7 @@ fun PremiumBleScreen(
                 )
                 StartStopButtons(state.scanning, onStart, onStop)
                 state.lastError?.let { ErrorMessage(it) }
-                HintText("RSSI é relativo. O radar não coleta endereço Bluetooth nem tenta conectar aos dispositivos.")
+                HintText("RSSI é relativo. Endereços Bluetooth não são exibidos; nomes vistos no anúncio ficam somente na sessão e são limpos ao sair desta tela.")
             }
         }
         items(state.devices, key = { it.key }) { device ->
@@ -319,7 +319,7 @@ fun PremiumNfcScreen(
         )
         CompactFact("Última tag", state.lastTagIdHex ?: "Aproxime uma tag NFC")
         CompactFact("Tecnologias", state.technologies.joinToString().ifBlank { "N/D" })
-        state.ndefText?.let { CompactFact("NDEF Text", it) }
+        state.ndefText?.let { CompactFact("Texto NDEF (visualização segura)", it) }
         HintText("Reader Mode fica ativo somente nesta tela. Ao sair, os dados da última tag são descartados da memória da sessão.")
     }
 }

@@ -3,6 +3,7 @@ package com.k410sh4.a25lab.data
 import android.nfc.Tag
 import android.nfc.tech.Ndef
 import com.k410sh4.a25lab.model.NfcState
+import com.k410sh4.a25lab.util.DisplaySanitizer
 import java.nio.charset.Charset
 import java.util.Locale
 
@@ -38,9 +39,13 @@ object NfcParser {
         val languageLength = status and 0x3F
         if (1 + languageLength > payload.size) return null
         val charset = if (utf16) Charset.forName("UTF-16") else Charsets.UTF_8
-        return payload
+        val decoded = payload
             .copyOfRange(1 + languageLength, payload.size)
             .toString(charset)
-            .take(MAX_NDEF_TEXT_CHARS)
+
+        return DisplaySanitizer.safeText(
+            decoded,
+            MAX_NDEF_TEXT_CHARS,
+        )
     }
 }
