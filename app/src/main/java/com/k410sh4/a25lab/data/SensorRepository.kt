@@ -15,12 +15,13 @@ class SensorRepository(context: Context) : SensorEventListener {
     private var latest = MotionSample()
 
     fun listSensors(): List<SensorInfo> = manager.getSensorList(Sensor.TYPE_ALL)
-        .sortedBy { it.type }
+        .sortedWith(compareBy<Sensor> { it.type }.thenBy { it.name })
         .map { sensor ->
             SensorInfo(
                 name = sensor.name,
                 vendor = sensor.vendor,
                 type = sensor.type,
+                stringType = sensor.stringType.orEmpty(),
                 typeName = sensorTypeName(sensor.type),
                 version = sensor.version,
                 maxRange = sensor.maximumRange,
@@ -28,9 +29,12 @@ class SensorRepository(context: Context) : SensorEventListener {
                 powerMa = sensor.power,
                 minDelayUs = sensor.minDelay,
                 maxDelayUs = sensor.maxDelay,
+                fifoReservedEventCount = sensor.fifoReservedEventCount,
                 fifoMaxEventCount = sensor.fifoMaxEventCount,
                 reportingMode = sensor.reportingMode,
                 wakeUp = sensor.isWakeUpSensor,
+                dynamic = sensor.isDynamicSensor,
+                additionalInfoSupported = sensor.isAdditionalInfoSupported,
             )
         }
 

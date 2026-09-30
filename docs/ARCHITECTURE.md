@@ -50,3 +50,10 @@ A CI executa:
 4. upload do APK somente se as etapas anteriores passarem.
 
 A validação de sensores, GNSS raw, Camera2, NFC, BLE, áudio e aceleração de IA exige teste físico no SM-A256E.
+
+
+## Inventário interno automático (v0.2)
+
+`HardwareProbe` passou a coletar também build/board/product/bootloader, ABIs, kernel, OpenGL ES, display, bateria e a lista de `systemAvailableFeatures`.
+
+`ReportFormatter` produz um inventário detalhado de cada sensor e câmera. `AppViewModel` copia esse inventário automaticamente para o clipboard após a varredura e persiste o último snapshot somente no diretório privado do app. Identificadores pessoais e de telecomunicações não fazem parte do probe.

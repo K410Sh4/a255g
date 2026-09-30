@@ -98,7 +98,9 @@ fun A25LabApp(viewModel: AppViewModel) {
                     Screen.Dashboard -> DashboardScreen(
                         modifier = Modifier.padding(padding),
                         device = viewModel.device,
-                        onRefresh = viewModel::refreshStaticProbe,
+                        copyStatus = viewModel.copyStatus,
+                        onRefresh = viewModel::refreshAllAndCopy,
+                        onCopy = viewModel::copySpecificationsToClipboard,
                         onNavigate = viewModel::navigate,
                         onShare = {
                             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -174,7 +176,9 @@ fun A25LabApp(viewModel: AppViewModel) {
 private fun DashboardScreen(
     modifier: Modifier,
     device: DeviceSnapshot?,
+    copyStatus: String,
     onRefresh: () -> Unit,
+    onCopy: () -> Unit,
     onNavigate: (Screen) -> Unit,
     onShare: () -> Unit,
 ) {
@@ -212,10 +216,19 @@ private fun DashboardScreen(
                         KeyValue("Sensores", device.sensorCount.toString())
                         KeyValue("Camera2 IDs", device.cameraCount.toString())
                     }
+                    Text(
+                        copyStatus,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "Ao abrir ou atualizar, o inventário completo é copiado automaticamente para a área de transferência e salvo localmente no app.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onRefresh) { Text("Atualizar") }
-                        Button(onClick = onShare) { Text("Compartilhar") }
+                        Button(onClick = onRefresh) { Text("Atualizar + copiar") }
+                        Button(onClick = onCopy) { Text("Copiar specs") }
                     }
+                    Button(onClick = onShare) { Text("Compartilhar inventário") }
                 }
             }
         }

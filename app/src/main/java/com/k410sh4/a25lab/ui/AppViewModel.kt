@@ -1,6 +1,8 @@
 package com.k410sh4.a25lab.ui
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.Handler
@@ -27,7 +29,9 @@ import com.k410sh4.a25lab.model.MotionSample
 import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
+import com.k410sh4.a25lab.model.SystemFeatureInfo
 import com.k410sh4.a25lab.util.ReportFormatter
+import java.io.File
 import java.util.concurrent.Executors
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -42,12 +46,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val audioAnalyzer = AudioAnalyzer(context)
     private val networkProbe = NetworkProbe(context)
     private val computeBenchmark = ComputeBenchmark()
+    private val clipboard = context.getSystemService(ClipboardManager::class.java)
+    private val snapshotFile = File(context.filesDir, "a25lab_last_internal_specs.txt")
 
     var screen by mutableStateOf(Screen.Dashboard)
         private set
     var device by mutableStateOf<DeviceSnapshot?>(null)
         private set
     var sensors by mutableStateOf<List<SensorInfo>>(emptyList())
+        private set
+    var systemFeatures by mutableStateOf<List<SystemFeatureInfo>>(emptyList())
         private set
     var motion by mutableStateOf(MotionSample())
         private set
@@ -67,12 +75,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var computeRunning by mutableStateOf(false)
         private set
+    var copyStatus by mutableStateOf("Preparando inventário interno…")
+        private set
 
     init {
-        refreshStaticProbe()
-        refreshNetwork()
-        val adapter = NfcAdapter.getDefaultAdapter(context)
-        nfc = NfcState(available = adapter != null, enabled = adapter?.isEnabled == true)
+        refreshAllAndCopy()
     }
 
     fun navigate(target: Screen) {
@@ -83,16 +90,56 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (target == Screen.Network) refreshNetwork()
     }
 
-    fun refreshStaticProbe() {
+    fun refreshAllAndCopy() {
         val sensorList = runCatching { sensorsRepository.listSensors() }.getOrDefault(emptyList())
         val cameraList = runCatching { cameraProbe.probe() }.getOrDefault(emptyList())
+        val features = runCatching { hardwareProbe.systemFeatures() }.getOrDefault(emptyList())
+
         sensors = sensorList
         cameras = cameraList
-        device = runCatching { hardwareProbe.snapshot(cameraList.size, sensorList.size) }.getOrNull()
+        systemFeatures = features
+        network = runCatching { networkProbe.snapshot() }.getOrDefault(NetworkState())
+
+        val adapter = NfcAdapter.getDefaultAdapter(context)
+        nfc = nfc.copy(
+            available = adapter != null,
+            enabled = adapter?.isEnabled == true,
+        )
+
+        device = runCatching {
+            hardwareProbe.snapshot(
+                cameraCount = cameraList.size,
+                sensorCount = sensorList.size,
+                featureCount = features.size,
+            )
+        }.getOrNull()
+
+        copySpecificationsToClipboard()
     }
+
+    fun refreshStaticProbe() = refreshAllAndCopy()
 
     fun refreshNetwork() {
         network = runCatching { networkProbe.snapshot() }.getOrDefault(NetworkState())
+    }
+
+    fun copySpecificationsToClipboard() {
+        val text = report()
+        if (device == null) {
+            copyStatus = "Não foi possível copiar: snapshot indisponível."
+            return
+        }
+
+        runCatching {
+            clipboard.setPrimaryClip(
+                ClipData.newPlainText("A25 Lab — especificações internas", text),
+            )
+            snapshotFile.writeText(text)
+        }.onSuccess {
+            copyStatus = "Especificações internas copiadas automaticamente (${text.length} caracteres) e salvas localmente."
+        }.onFailure { error ->
+            copyStatus = "Falha ao copiar especificações: ${error.message ?: "erro desconhecido"}"
+        }
     }
 
     fun startMotion() {
@@ -152,7 +199,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun report(): String = ReportFormatter.build(device, sensors, cameras)
+    fun report(): String = ReportFormatter.build(
+        snapshot = device,
+        sensors = sensors,
+        cameras = cameras,
+        systemFeatures = systemFeatures,
+        network = network,
+        nfc = nfc,
+    )
 
     fun stopLiveModules() {
         sensorsRepository.stopMotion()

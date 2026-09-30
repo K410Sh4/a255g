@@ -7,18 +7,33 @@ data class DeviceSnapshot(
     val brand: String,
     val model: String,
     val device: String,
+    val product: String,
+    val board: String,
     val hardware: String,
+    val bootloader: String,
+    val buildId: String,
+    val buildDisplay: String,
+    val buildFingerprint: String,
     val socManufacturer: String,
     val socModel: String,
+    val supportedAbis: List<String>,
+    val supported32BitAbis: List<String>,
+    val supported64BitAbis: List<String>,
+    val kernelVersion: String,
     val sdkInt: Int,
     val androidRelease: String,
     val securityPatch: String,
     val cpuCores: Int,
     val totalMemoryBytes: Long,
     val availableMemoryBytes: Long,
+    val lowRamDevice: Boolean,
     val totalStorageBytes: Long,
     val freeStorageBytes: Long,
+    val screenWidthPx: Int,
+    val screenHeightPx: Int,
+    val densityDpi: Int,
     val refreshRateHz: Float,
+    val glEsVersion: String,
     val nfcAvailable: Boolean,
     val bluetoothLeAvailable: Boolean,
     val gpsAvailable: Boolean,
@@ -26,14 +41,26 @@ data class DeviceSnapshot(
     val microphoneAvailable: Boolean,
     val thermalStatus: Int,
     val batteryTemperatureC: Float?,
+    val batteryVoltageMv: Int?,
+    val batteryLevelPercent: Int?,
+    val batteryHealth: Int?,
+    val batteryStatus: Int?,
+    val batteryTechnology: String?,
     val sensorCount: Int,
     val cameraCount: Int,
+    val systemFeatureCount: Int,
+)
+
+data class SystemFeatureInfo(
+    val name: String,
+    val version: Int,
 )
 
 data class SensorInfo(
     val name: String,
     val vendor: String,
     val type: Int,
+    val stringType: String,
     val typeName: String,
     val version: Int,
     val maxRange: Float,
@@ -41,9 +68,12 @@ data class SensorInfo(
     val powerMa: Float,
     val minDelayUs: Int,
     val maxDelayUs: Int,
+    val fifoReservedEventCount: Int,
     val fifoMaxEventCount: Int,
     val reportingMode: Int,
     val wakeUp: Boolean,
+    val dynamic: Boolean,
+    val additionalInfoSupported: Boolean,
 )
 
 data class MotionSample(
@@ -121,16 +151,45 @@ data class NfcState(
 
 fun sensorTypeName(type: Int): String = when (type) {
     Sensor.TYPE_ACCELEROMETER -> "Acelerômetro"
-    Sensor.TYPE_GYROSCOPE -> "Giroscópio"
     Sensor.TYPE_MAGNETIC_FIELD -> "Magnetômetro"
+    3 -> "Orientação"
+    Sensor.TYPE_GYROSCOPE -> "Giroscópio"
     Sensor.TYPE_LIGHT -> "Luz"
-    Sensor.TYPE_PROXIMITY -> "Proximidade"
     Sensor.TYPE_PRESSURE -> "Pressão"
+    Sensor.TYPE_PROXIMITY -> "Proximidade"
     Sensor.TYPE_GRAVITY -> "Gravidade"
     Sensor.TYPE_LINEAR_ACCELERATION -> "Aceleração linear"
     Sensor.TYPE_ROTATION_VECTOR -> "Vetor de rotação"
+    Sensor.TYPE_RELATIVE_HUMIDITY -> "Umidade relativa"
+    Sensor.TYPE_AMBIENT_TEMPERATURE -> "Temperatura ambiente"
+    Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED -> "Magnetômetro não calibrado"
     Sensor.TYPE_GAME_ROTATION_VECTOR -> "Rotação de jogo"
-    Sensor.TYPE_STEP_COUNTER -> "Contador de passos"
+    Sensor.TYPE_GYROSCOPE_UNCALIBRATED -> "Giroscópio não calibrado"
+    Sensor.TYPE_SIGNIFICANT_MOTION -> "Movimento significativo"
     Sensor.TYPE_STEP_DETECTOR -> "Detector de passos"
-    else -> "Tipo $type"
+    Sensor.TYPE_STEP_COUNTER -> "Contador de passos"
+    Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR -> "Rotação geomagnética"
+    Sensor.TYPE_HEART_RATE -> "Frequência cardíaca"
+    Sensor.TYPE_TILT_DETECTOR -> "Detector de inclinação"
+    Sensor.TYPE_WAKE_GESTURE -> "Gesto de despertar"
+    Sensor.TYPE_GLANCE_GESTURE -> "Gesto de olhar"
+    Sensor.TYPE_PICK_UP_GESTURE -> "Gesto de levantar"
+    26 -> "Inclinação do pulso"
+    27 -> "Orientação do dispositivo"
+    28 -> "Pose 6DoF"
+    29 -> "Detecção estacionária"
+    30 -> "Detecção de movimento"
+    31 -> "Batimento cardíaco"
+    32 -> "Meta sensor dinâmico"
+    33 -> "Informação adicional"
+    34 -> "Baixa latência fora do corpo"
+    35 -> "Acelerômetro não calibrado"
+    36 -> "Ângulo de dobradiça"
+    37 -> "Head tracker"
+    38 -> "Acelerômetro de eixos limitados"
+    39 -> "Giroscópio de eixos limitados"
+    40 -> "Acelerômetro não calibrado de eixos limitados"
+    41 -> "Giroscópio não calibrado de eixos limitados"
+    42 -> "Heading"
+    else -> if (type >= 65_536) "Sensor vendor tipo $type" else "Tipo $type"
 }

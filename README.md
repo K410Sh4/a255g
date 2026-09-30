@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.1.0
+## Estado atual — v0.2.0
 
 Implementado:
 
@@ -16,7 +16,7 @@ Implementado:
 - NFC Reader Mode com ID, tecnologias e NDEF Text;
 - NetworkCapabilities;
 - baseline CPU determinística;
-- compartilhamento de relatório de capacidades;
+- inventário interno ampliado (build, ABI, kernel, tela, bateria, OpenGL ES e system features);\n- cópia automática do inventário completo para a área de transferência ao abrir/atualizar;\n- snapshot completo também salvo no armazenamento interno privado do app;\n- compartilhamento de relatório de capacidades;
 - CI para build + testes + lint + APK.
 
 ## Princípio do projeto
@@ -70,3 +70,15 @@ Veja `docs/ARCHITECTURE.md`.
 ### Nota de compatibilidade do CI
 
 O runner atual não disponibiliza `platforms;android-37` via SDK Manager. As bibliotecas Compose foram fixadas na linha 1.11.4 e Lifecycle 2.10.0, anteriores à migração transitiva para compileSdk 37, mantendo compile/target SDK 36 sem suprimir a validação de AAR metadata.
+
+
+## Inventário automático
+
+Na inicialização e sempre que **Atualizar + copiar** é usado, o app:
+
+1. coleta o snapshot do dispositivo, build, SoC/ABI, RAM/storage, tela, bateria/térmico, rede, NFC, sensores, Camera2 e `PackageManager.systemAvailableFeatures`;
+2. gera um relatório textual completo;
+3. copia o relatório para a área de transferência;
+4. salva uma cópia privada em `filesDir/a25lab_last_internal_specs.txt`.
+
+Por privacidade, o inventário não coleta IMEI, número de telefone, Android ID, contas, contatos, histórico de localização ou conteúdo pessoal.
