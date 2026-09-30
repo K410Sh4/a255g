@@ -29,6 +29,7 @@ import com.k410sh4.a25lab.model.MotionSample
 import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
+import com.k410sh4.a25lab.model.SuperpowerSensorState
 import com.k410sh4.a25lab.model.SystemFeatureInfo
 import com.k410sh4.a25lab.util.ReportFormatter
 import java.io.File
@@ -59,6 +60,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var motion by mutableStateOf(MotionSample())
         private set
+    var superpowers by mutableStateOf(SuperpowerSensorState())
+        private set
     var gnss by mutableStateOf(GnssState())
         private set
     var ble by mutableStateOf(BleState())
@@ -86,8 +89,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (screen == target) return
         stopLiveModules()
         screen = target
-        if (target == Screen.Sensors) startMotion()
-        if (target == Screen.Network) refreshNetwork()
+        when (target) {
+            Screen.Sensors -> startMotion()
+            Screen.Superpowers -> startSuperpowers()
+            Screen.Network -> refreshNetwork()
+            else -> Unit
+        }
     }
 
     fun refreshAllAndCopy() {
@@ -144,6 +151,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startMotion() {
         sensorsRepository.startMotion { sample -> post { motion = sample } }
+    }
+
+    fun startSuperpowers() {
+        sensorsRepository.startSuperpowers { state -> post { superpowers = state } }
     }
 
     fun startGnss() {
@@ -232,6 +243,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
 enum class Screen(val title: String) {
     Dashboard("A25 Lab"),
+    Superpowers("Superpoderes"),
     Sensors("Sensores"),
     Gnss("GNSS"),
     Bluetooth("Bluetooth LE"),

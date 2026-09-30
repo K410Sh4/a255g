@@ -111,6 +111,29 @@ fun A25LabApp(viewModel: AppViewModel) {
                             context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
                         },
                     )
+                    Screen.Superpowers -> SuperpowersScreen(
+                        modifier = Modifier.padding(padding),
+                        sensors = viewModel.superpowers,
+                        ble = viewModel.ble,
+                        audio = viewModel.audio,
+                        onStartBle = {
+                            runWithPermissions(
+                                arrayOf(
+                                    Manifest.permission.BLUETOOTH_SCAN,
+                                    Manifest.permission.BLUETOOTH_CONNECT,
+                                ),
+                                viewModel::startBle,
+                            )
+                        },
+                        onStopBle = viewModel::stopBle,
+                        onStartAudio = {
+                            runWithPermissions(
+                                arrayOf(Manifest.permission.RECORD_AUDIO),
+                                viewModel::startAudio,
+                            )
+                        },
+                        onStopAudio = viewModel::stopAudio,
+                    )
                     Screen.Sensors -> SensorsScreen(
                         Modifier.padding(padding),
                         viewModel.sensors,
@@ -234,6 +257,11 @@ private fun DashboardScreen(
         }
         items(
             listOf(
+                Triple(
+                    Screen.Superpowers,
+                    "Superpoderes",
+                    "Visão magnética, detector de movimento, luz, orientação 3D, radar BLE e ouvido espectral.",
+                ),
                 Triple(Screen.Sensors, "Sensores + motion", "Acelerômetro, giroscópio, magnetômetro e inventário completo."),
                 Triple(Screen.Gnss, "GNSS bruto", "Satélites por constelação e callback de medições GNSS brutas."),
                 Triple(Screen.Bluetooth, "Bluetooth LE", "Scanner BLE com RSSI, nome, endereço e conectabilidade expostos."),

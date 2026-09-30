@@ -2,7 +2,7 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-## Estado atual — v0.2.0
+## Estado atual — v0.3.0
 
 Implementado:
 
@@ -82,3 +82,19 @@ Na inicialização e sempre que **Atualizar + copiar** é usado, o app:
 4. salva uma cópia privada em `filesDir/a25lab_last_internal_specs.txt`.
 
 Por privacidade, o inventário não coleta IMEI, número de telefone, Android ID, contas, contatos, histórico de localização ou conteúdo pessoal.
+
+
+## Superpoderes — v0.3
+
+A tela **Superpoderes** reúne seis modos de percepção ampliada usando apenas APIs Android e os sensores já confirmados no SM-A256E:
+
+- **Visão Magnética:** vetor XYZ e intensidade total do magnetômetro em µT.
+- **Detector de Movimento:** aceleração dinâmica e velocidade angular, com indicação relativa de movimento.
+- **Visão de Luz:** lux do sensor padrão e leitura bruta do canal Samsung `light_cct` quando o stream puder ser aberto.
+- **Orientação 3D:** yaw, pitch e roll derivados do `TYPE_ROTATION_VECTOR`.
+- **Radar BLE:** dispositivos próximos, RSSI e classificação relativa de força do sinal.
+- **Ouvido Espectral:** PCM local, RMS dBFS e frequência dominante por FFT.
+
+O stream de sensores usado pela UI é limitado a aproximadamente 20 atualizações por segundo para evitar recomposições excessivas, embora os sensores continuem sendo amostrados pelo Android nas taxas solicitadas.
+
+AOIS e VDIS são detectados e exibidos com o `minDelay` anunciado pelo HAL, mas a v0.3 **não afirma taxa efetiva** desses canais até um benchmark físico específico medir eventos por segundo e jitter.

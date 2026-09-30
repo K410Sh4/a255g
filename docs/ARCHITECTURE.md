@@ -57,3 +57,12 @@ A validação de sensores, GNSS raw, Camera2, NFC, BLE, áudio e aceleração de
 `HardwareProbe` passou a coletar também build/board/product/bootloader, ABIs, kernel, OpenGL ES, display, bateria e a lista de `systemAvailableFeatures`.
 
 `ReportFormatter` produz um inventário detalhado de cada sensor e câmera. `AppViewModel` copia esse inventário automaticamente para o clipboard após a varredura e persiste o último snapshot somente no diretório privado do app. Identificadores pessoais e de telecomunicações não fazem parte do probe.
+
+
+## Superpowers Engine (v0.3)
+
+`SensorRepository` ganhou um fluxo específico de superpoderes. Ele registra acelerômetro, giroscópio, magnetômetro, luz, rotation vector e tenta abrir o canal vendor `com.samsung.sensor.light_cct`. O estado derivado é publicado no máximo a cada 50 ms para reduzir carga de UI.
+
+`SuperpowerMath` mantém cálculos puros/testáveis de magnitude vetorial, aceleração dinâmica e classificações relativas. `SuperpowersScreen` apenas renderiza estado e aciona BLE/áudio; BLE e microfone continuam exigindo permissão explícita.
+
+AOIS (`com.samsung.sensor.gyroscope_aois`) e VDIS (`com.samsung.sensor.vdis_gyro`) são tratados como capacidades detectadas, não como streams validados. Isso evita transformar `minDelay` declarado em uma alegação de frequência real sem medição.
