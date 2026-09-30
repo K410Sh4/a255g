@@ -144,3 +144,12 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 86. **Áudio parado parecia uma medição real** — o estado inicial exibia `0 Hz` e `-120 dBFS` mesmo sem captura ativa. Frequência e nível agora mostram `N/D` até existir uma sessão de áudio em execução.
 87. **GNSS não verificado parecia estado real** — os defaults diziam implicitamente “localização ativada / GPS indisponível / raw não suportado” antes de qualquer probe. Esses campos passaram a aceitar estado desconhecido e a UI mostra “não verificado” até uma tentativa real.
+
+
+88. **Métricas GNSS inativas pareciam zeros medidos** — satélites visíveis/usados e contagem raw agora mostram `N/D` enquanto o receptor/callback não estiver ativo, e “Não suportado” somente após capacidade realmente verificada.
+89. **Superfície de permissões não tinha contrato instrumentado completo** — o teste Android agora garante ausência de `INTERNET`, `BLUETOOTH_CONNECT`, `CAMERA`, localização em background, telefonia e contatos, além de confirmar que apenas a Activity launcher fica exportada.
+90. **Glifos decorativos podiam poluir TalkBack** — símbolos usados como ícones na navegação e cards foram removidos da árvore semântica; os rótulos humanos permanecem como fonte acessível.
+91. **Ações do inventário podiam apertar em larguras/fontes maiores** — Atualizar e Copiar agora dividem a largura disponível de forma previsível, reduzindo colisões de layout.
+92. **BLE não tratava toda falha de runtime ao iniciar/parar scan** — além de revogação de permissão, estados inesperados do adaptador agora viram diagnóstico seguro; nomes vazios de anúncio recebem fallback legível.
+93. **UID NFC vazio aparecia como campo em branco** — identificadores vazios agora são tratados como ausentes.
+94. **Lookup NFC ainda usava API estática antiga** — Activity e ViewModel passaram a obter o adaptador por `NfcManager`, reduzindo dependência de API de lookup depreciada.
