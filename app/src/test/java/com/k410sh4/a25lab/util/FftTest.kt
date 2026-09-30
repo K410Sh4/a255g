@@ -1,0 +1,55 @@
+package com.k410sh4.a25lab.util
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import kotlin.math.PI
+import kotlin.math.sin
+
+class FftTest {
+    @Test
+    fun dominantFrequency_detectsNyquistBin() {
+        val samples = ShortArray(2048) { if (it % 2 == 0) 12_000 else -12_000 }
+        val detected = Fft.dominantFrequency(samples, 44_100)
+        assertEquals(22_050f, detected, 1f)
+    }
+
+    @Test
+    fun dominantFrequency_detectsOneKhzTone() {
+        val sampleRate = 8192
+        val size = 2048
+        val frequency = 1000.0
+        val samples = ShortArray(size) { index ->
+            (sin(2.0 * PI * frequency * index / sampleRate) * 20_000.0).toInt().toShort()
+        }
+
+        val detected = Fft.dominantFrequency(samples, sampleRate)
+
+        assertEquals(1000f, detected, 4.1f)
+    }
+
+    @Test
+    fun dominantFrequency_constantDcReturnsZeroAfterDcRemoval() {
+        val samples = ShortArray(2048) { 1_000 }
+        val detected = Fft.dominantFrequency(samples, 44_100)
+
+        assertEquals(0f, detected, 0.0001f)
+    }
+
+    @Test
+    fun dominantFrequency_silenceReturnsZero() {
+        val detected = Fft.dominantFrequency(
+            ShortArray(2048),
+            44_100,
+        )
+
+        assertEquals(0f, detected, 0.0001f)
+    }
+
+    @Test
+    fun dominantFrequency_rejectsNonPowerOfTwo() {
+        assertThrows(IllegalArgumentException::class.java) {
+            Fft.dominantFrequency(ShortArray(1000), 44_100)
+        }
+    }
+}

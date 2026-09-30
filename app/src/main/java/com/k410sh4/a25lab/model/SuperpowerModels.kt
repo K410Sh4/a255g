@@ -1,0 +1,42 @@
+package com.k410sh4.a25lab.model
+
+enum class AccelerationSource {
+    LINEAR_SENSOR,
+    ACCELEROMETER_FALLBACK,
+    UNAVAILABLE,
+}
+
+data class SuperpowerSensorState(
+    val magneticXUt: Float = 0f,
+    val magneticYUt: Float = 0f,
+    val magneticZUt: Float = 0f,
+    val magneticStrengthUt: Float = 0f,
+    val magneticSampleReady: Boolean = false,
+    val magneticAccuracy: Int? = null,
+    val dynamicAccelerationMs2: Float = 0f,
+    val accelerationSource: AccelerationSource = AccelerationSource.UNAVAILABLE,
+    val accelerationSampleReady: Boolean = false,
+    val angularSpeedRadS: Float = 0f,
+    val angularStreamActive: Boolean = false,
+    val angularSampleReady: Boolean = false,
+    val magneticStreamActive: Boolean = false,
+    val lightStreamActive: Boolean = false,
+    val lightLux: Float? = null,
+    val cctRaw: Float? = null,
+    val cctRawValues: List<Float> = emptyList(),
+    val yawDeg: Float = 0f,
+    val pitchDeg: Float = 0f,
+    val rollDeg: Float = 0f,
+    val quaternionW: Float = 1f,
+    val quaternionX: Float = 0f,
+    val quaternionY: Float = 0f,
+    val quaternionZ: Float = 0f,
+    val orientationAvailable: Boolean = false,
+    val orientationSampleReady: Boolean = false,
+    val cctSensorAvailable: Boolean = false,
+    val cctStreamActive: Boolean = false,
+    val aoisAvailable: Boolean = false,
+    val aoisMinDelayUs: Int? = null,
+    val vdisAvailable: Boolean = false,
+    val vdisMinDelayUs: Int? = null,
+)

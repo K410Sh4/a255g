@@ -2,4 +2,187 @@
 
 Laboratório Android para descobrir e usar, de forma verificável, as capacidades que o Galaxy A25 5G expõe a aplicativos.
 
-> Estrutura inicial. O código completo será desenvolvido em branch de feature e validado por CI antes do merge.
+## Estado atual — v0.5.2
+
+Implementado:
+
+- inventário de hardware/Android;
+- inventário completo de sensores;
+- acelerômetro, giroscópio e magnetômetro ao vivo;
+- GNSS status e callback de medições brutas;
+- scanner Bluetooth Low Energy;
+- Audio Lab com PCM 44,1 kHz, RMS dBFS e FFT;
+- probe Camera2 para RAW, manual sensor, OIS, hardware level e resoluções;
+- NFC Reader Mode com ID, tecnologias e NDEF Text;
+- NetworkCapabilities;
+- baseline CPU determinística;
+- inventário interno ampliado (build, ABI, kernel, tela, bateria, OpenGL ES e system features);
+- persistência automática do inventário em armazenamento privado; clipboard somente por ação explícita do usuário;
+- snapshot completo também salvo no armazenamento interno privado do app;
+- compartilhamento de relatório de capacidades;
+- CI para build debug/release, testes unitários, lint, compilação dos testes Android, execução smoke em emulador Android 16 e APKs.
+
+## Princípio do projeto
+
+**Capacidade do SoC não é tratada como capacidade acessível do APK.**
+
+O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente exposto. Isso evita alegações falsas, por exemplo assumir acesso à NPU apenas porque o Exynos 1280 possui um bloco neural.
+
+## Stack
+
+- Kotlin
+- Jetpack Compose 1.11.4 + Material 3 1.3.2
+- Android Gradle Plugin 9.4.1
+- Gradle 9.8.0 na CI
+- compile/target SDK 36
+- min SDK 31
+
+## Permissões
+
+- `ACCESS_COARSE_LOCATION` + `ACCESS_FINE_LOCATION`: par solicitado pelo Android para permitir localização precisa; o A25 Lab usa a precisão apenas para ativar callbacks GNSS/medições brutas e descarta coordenadas.
+- `BLUETOOTH_SCAN`: descoberta BLE passiva. O app não solicita `BLUETOOTH_CONNECT` e não tenta conectar aos dispositivos encontrados.
+- `RECORD_AUDIO`: Audio Lab local.
+- `NFC`: leitura de tags em primeiro plano.
+- `ACCESS_NETWORK_STATE`: leitura das capacidades da rede ativa.
+
+O probe Camera2 consulta apenas características e, por isso, não pede permissão de câmera nesta versão. O app também não declara `INTERNET`: nenhum áudio, GNSS, BLE ou NFC é enviado para servidores.
+
+## Build local
+
+Requer JDK 17, Android SDK 36 e Build Tools 36.0.0. O repositório inclui o Gradle Wrapper 9.8.0 com checksum da distribuição fixado.
+
+```bash
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+APK:
+
+`app/build/outputs/apk/debug/app-debug.apk`
+
+## Próximas validações no SM-A256E
+
+1. registrar quais campos de `GnssMeasurement` são efetivamente preenchidos;
+2. medir Camera2 por lente física/lógica;
+3. validar fonte `UNPROCESSED` do microfone e latência real;
+4. adicionar benchmark LiteRT com o mesmo modelo em backends disponíveis e medir latência/RAM/temperatura;
+5. somente depois considerar modo avançado ADB/Shizuku para diagnósticos adicionais.
+
+Veja `docs/ARCHITECTURE.md`.
+
+
+### Nota de compatibilidade do CI
+
+O runner atual não disponibiliza `platforms;android-37` via SDK Manager. As bibliotecas Compose foram fixadas na linha 1.11.4 e Lifecycle 2.10.0, anteriores à migração transitiva para compileSdk 37, mantendo compile/target SDK 36 sem suprimir a validação de AAR metadata.
+
+
+## Inventário interno
+
+Na inicialização e sempre que **Atualizar** é usado, o app:
+
+1. coleta o snapshot do dispositivo, build, SoC/ABI, RAM/storage, tela, bateria/térmico, rede, NFC, sensores, Camera2 e `PackageManager.systemAvailableFeatures`;
+2. gera um relatório textual completo;
+3. salva uma cópia privada em `noBackupFilesDir/a25lab_last_internal_specs.txt`, fora do backup/transferência do Android;
+4. mantém o clipboard intacto. O relatório só é copiado quando o usuário toca em **Copiar**.
+
+Por privacidade, o inventário não coleta IMEI, número de telefone, Android ID, contas, contatos, histórico de localização ou conteúdo pessoal.
+
+
+## Superpoderes — v0.3
+
+A tela **Superpoderes** reúne seis modos de percepção ampliada usando apenas APIs Android e os sensores já confirmados no SM-A256E:
+
+- **Visão Magnética:** vetor XYZ e intensidade total do magnetômetro em µT.
+- **Detector de Movimento:** aceleração dinâmica e velocidade angular, com indicação relativa de movimento.
+- **Visão de Luz:** lux do sensor padrão e leitura bruta do canal Samsung `light_cct` quando o stream puder ser aberto.
+- **Orientação 3D:** yaw, pitch e roll derivados do `TYPE_ROTATION_VECTOR`.
+- **Radar BLE:** dispositivos próximos, RSSI e classificação relativa de força do sinal.
+- **Ouvido Espectral:** PCM local, RMS dBFS e frequência dominante por FFT.
+
+O stream de sensores usado pela UI é limitado a aproximadamente 20 atualizações por segundo para evitar recomposições excessivas, embora os sensores continuem sendo amostrados pelo Android nas taxas solicitadas.
+
+AOIS e VDIS são detectados e exibidos com o `minDelay` anunciado pelo HAL, mas a v0.3 **não afirma taxa efetiva** desses canais até um benchmark físico específico medir eventos por segundo e jitter.
+
+
+## Visualizações 3D e UX — v0.4
+
+A v0.4 corrige a ausência de representações 3D na tela Superpoderes e reorganiza a interface para priorizar leitura humana.
+
+- **Orientação 3D:** cubo com projeção em perspectiva atualizado por yaw/pitch/roll do Rotation Vector.
+- **Visão Magnética 3D:** eixos espaciais + vetor normalizado do campo magnético.
+- métricas principais usam tipografia maior e rótulos curtos;
+- detalhes AOIS/VDIS ficam recolhidos em **Ver detalhes técnicos**;
+- valores longos deixam de competir com rótulos em duas colunas apertadas;
+- BLE e áudio usam ações claras de iniciar/parar;
+- textos técnicos foram reduzidos para observações curtas.
+
+As visualizações são desenhadas com Compose Canvas, sem engine 3D externa. Isso reduz dependências e mantém o render leve para este caso de uso.
+
+## Premium UI + categorias + quaternion 3D — v0.5
+
+A interface principal foi reorganizada em quatro áreas persistentes:
+
+- **Início:** resumo do aparelho, status e inventário.
+- **Percepção:** Movimento & 3D, Ambiente e Áudio.
+- **Conectividade:** BLE, GNSS, NFC e Rede.
+- **Laboratório:** Sensores, Camera2 e Compute/IA.
+
+A navegação inferior permanece disponível em toda a aplicação para reduzir profundidade e facilitar retorno entre áreas.
+
+### 3D
+
+A pose do aparelho deixou de aplicar yaw/pitch/roll diretamente ao wireframe. O SensorRepository agora captura o quaternion do TYPE_ROTATION_VECTOR, aplica suavização normalizada e entrega o quaternion para o render.
+
+O novo PhonePose3D:
+- representa um telefone em vez de um cubo genérico;
+- usa faces preenchidas e profundidade em perspectiva;
+- permite **Centralizar posição atual**;
+- calcula orientação relativa ao ponto de referência;
+- mantém uma grade espacial e eixos de orientação.
+
+MagneticField3D passou a usar uma esfera/grade visual, eixos e vetor do campo com intensidade relativa.
+
+A UI mantém limite de publicação de estado em aproximadamente 20 Hz para evitar recomposição excessiva.
+
+
+## Hardening e auditoria — v0.5.1
+
+A v0.5.1 é uma rodada de correção antes de adicionar novos recursos.
+
+Principais correções:
+
+- streams de sensores voltam corretamente após background/resume;
+- NFC Reader Mode só fica ativo dentro da tela NFC;
+- inventário estático e escrita do snapshot saíram do hot path da UI;
+- cópia automática para o clipboard é adiada se o app estiver em background;
+- aceleração usa `TYPE_LINEAR_ACCELERATION` quando disponível e identifica o fallback;
+- quaternion começa no primeiro sample real e usa suavização dependente do tempo;
+- magnetômetro expõe qualidade/calibração em vez de tratar toda leitura como igualmente confiável;
+- `light_cct` exibe o vetor vendor bruto sem presumir qual índice representa CCT;
+- áudio ganhou proteção contra stop/start concorrente, leitura parcial e falsos picos em silêncio/DC;
+- FFT de produção reutiliza buffers;
+- BLE usa apenas a permissão necessária para scan, não coleta endereço, limita memória e expira dispositivos antigos;
+- rede diferencia rede ativa, capacidade de Internet, validação real e portal cativo;
+- falha de um Camera2 ID não apaga as outras câmeras do inventário;
+- benchmark CPU usa warm-up e mediana;
+- código legado da UI anterior foi removido;
+- backup/transferência de dados privados foram explicitamente bloqueados;
+- CI também monta o release minificado para exercitar R8.
+
+Pontos dependentes do SM-A256E continuam marcados como validação física, não como comportamento confirmado.
+
+
+## Build reproduzível
+
+O projeto inclui `gradlew`, `gradlew.bat`, `gradle-wrapper.jar` oficial e `gradle-wrapper.properties` fixado no Gradle 9.8.0. A distribuição `gradle-9.8.0-bin.zip` possui SHA-256 pinado no wrapper, e a CI usa `gradle/actions/setup-gradle` com validação automática do JAR antes de executar qualquer build.
+
+Isso evita depender de uma instalação global de Gradle diferente entre máquinas.
+
+
+## Hardening crítico — v0.5.2
+
+- inventário não altera mais o clipboard automaticamente;
+- reinício do GNSS sempre encerra a sessão anterior antes de revalidar permissões;
+- ação pendente de permissão usa estado restaurável e sobrevive à recriação da Activity;
+- ausência de rede ativa é exibida como `N/D` em propriedades que não podem ser inferidas;
+- RMS de áudio remove offset DC antes de calcular dBFS;
+- fallback inicial da UI não presume que o dispositivo seja um Galaxy A25.
