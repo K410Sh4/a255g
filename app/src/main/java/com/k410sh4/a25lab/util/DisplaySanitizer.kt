@@ -76,7 +76,9 @@ object DisplaySanitizer {
         }
 
         return codePoint == 0x061C ||
-            codePoint in 0x200B..0x200F ||
+            codePoint == 0x200B ||
+            codePoint == 0x200E ||
+            codePoint == 0x200F ||
             codePoint in 0x202A..0x202E ||
             codePoint == 0x2060 ||
             codePoint in 0x2066..0x2069 ||

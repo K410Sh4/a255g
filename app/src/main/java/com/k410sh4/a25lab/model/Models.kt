@@ -94,6 +94,7 @@ data class GnssState(
     val gpsProviderEnabled: Boolean = false,
     val engineActive: Boolean = false,
     val rawMeasurementsSupported: Boolean = false,
+    val rawMeasurementsActive: Boolean = false,
     val satellitesVisible: Int = 0,
     val satellitesUsed: Int = 0,
     val rawMeasurementCount: Int = 0,

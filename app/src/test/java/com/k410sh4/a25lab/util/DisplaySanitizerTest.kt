@@ -28,6 +28,15 @@ class DisplaySanitizerTest {
     }
 
     @Test
+    fun safeText_preservesZeroWidthJoinerForLegitimateEmoji() {
+        val family = "👨‍👩‍👧"
+        assertEquals(
+            family,
+            DisplaySanitizer.safeText(family, 32),
+        )
+    }
+
+    @Test
     fun safeText_truncatesByCodePointWithoutSplittingEmoji() {
         assertEquals(
             "A🙂…",

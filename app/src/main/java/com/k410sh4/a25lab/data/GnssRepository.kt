@@ -122,6 +122,7 @@ class GnssRepository(private val context: Context) {
             gpsProviderEnabled = true,
             engineActive = false,
             rawMeasurementsSupported = rawMeasurementsSupported,
+            rawMeasurementsActive = false,
         )
         callback?.invoke(state)
 
@@ -168,7 +169,8 @@ class GnssRepository(private val context: Context) {
                 state.copy(
                     running = true,
                     engineActive = true,
-                    rawMeasurementsSupported =
+                    rawMeasurementsSupported = rawMeasurementsSupported,
+                    rawMeasurementsActive =
                         rawMeasurementsSupported && measurementsRegistered,
                     lastError = when {
                         rawMeasurementsSupported && !measurementsRegistered ->
@@ -245,10 +247,8 @@ class GnssRepository(private val context: Context) {
                 measurementsCallback,
             )
         }
-        if (hasFineLocationPermission()) {
-            runCatching {
-                manager.removeUpdates(engineLocationListener)
-            }
+        runCatching {
+            manager.removeUpdates(engineLocationListener)
         }
     }
 

@@ -97,12 +97,10 @@ class BleRepository(private val context: Context) {
 
     private fun stopInternal(clearCallback: Boolean) {
         maintenanceHandler.removeCallbacks(maintenanceRunnable)
-        if (hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-            try {
-                adapter?.bluetoothLeScanner?.stopScan(scanCallback)
-            } catch (_: SecurityException) {
-                // A permissão pode ser revogada entre a checagem e a chamada.
-            }
+        try {
+            adapter?.bluetoothLeScanner?.stopScan(scanCallback)
+        } catch (_: SecurityException) {
+            // Cleanup best-effort: a permissão pode ter sido revogada.
         }
 
         if (state.scanning) {

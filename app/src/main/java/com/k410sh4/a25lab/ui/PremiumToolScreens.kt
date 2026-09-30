@@ -138,6 +138,10 @@ fun PremiumGnssScreen(
             if (state.rawMeasurementsSupported) "sim" else "não",
         )
         CompactFact(
+            "GNSS raw ativo",
+            if (state.rawMeasurementsActive) "sim" else "não",
+        )
+        CompactFact(
             "Constelações",
             state.constellations.joinToString().ifBlank { "N/D" },
         )

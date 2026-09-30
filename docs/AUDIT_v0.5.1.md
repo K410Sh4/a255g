@@ -94,3 +94,11 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 53. **Nome BLE podia usar quebras de linha para deformar a UI** — o sanitizador ganhou modo de linha única; nomes anunciados por dispositivos próximos agora removem newline/CR/tab sem perder Unicode legítimo.
 54. **NDEF conectado ainda usava snapshot cached** — depois de conectar à tag, a leitura passa a usar a mensagem NDEF atual em vez do cache do objeto Tag.
 55. **Botão Voltar do sistema nas categorias raiz encerrava o app** — Percepção, Conectividade e Laboratório agora voltam para Início; apenas Início mantém o comportamento padrão de sair.
+
+
+56. **GNSS capability vs callback ativo estavam misturados** — o campo `rawMeasurementsSupported` virava falso quando o Android recusava o registro do callback, confundindo capacidade anunciada com estado operacional. Agora existem estados separados para suporte e atividade.
+57. **Cleanup GNSS após revogação de permissão** — `removeUpdates` era pulado quando a permissão havia sido revogada, podendo deixar um listener registrado por mais tempo que o necessário. O cleanup agora é sempre tentado e tratado como best-effort.
+58. **Cleanup BLE após revogação de permissão** — o mesmo padrão existia no scan BLE. `stopScan` agora é tentado mesmo após revogação e `SecurityException` é tratada.
+59. **Métricas live obsoletas** — Áudio, GNSS e sensores podiam continuar mostrando valores da sessão anterior após parar/sair/ocultar o app. Os estados transitórios agora são zerados nas transições correspondentes.
+60. **Sanitização quebrava emoji/idiomas legítimos** — ZWNJ/ZWJ eram tratados como controles perigosos. Eles passam a ser preservados; controles bidi e de direção continuam neutralizados.
+61. **Actions da CI dependiam de tags mutáveis** — checkout, setup-java, setup-gradle e upload-artifact agora são fixados em commits imutáveis, mantendo comentário com o major correspondente.

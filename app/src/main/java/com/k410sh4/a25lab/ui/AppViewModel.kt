@@ -113,6 +113,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val leavingNfc = screen == Screen.Nfc && target != Screen.Nfc
         val leavingBle =
             screen == Screen.Bluetooth && target != Screen.Bluetooth
+        val leavingGnss =
+            screen == Screen.Gnss && target != Screen.Gnss
+        val leavingAudio =
+            screen == Screen.Audio && target != Screen.Audio
+        val leavingMotion =
+            screen == Screen.Sensors && target != Screen.Sensors
+        val leavingSuperpowers =
+            (screen == Screen.Superpowers || screen == Screen.Environment) &&
+                target != Screen.Superpowers &&
+                target != Screen.Environment
         stopLiveModules(clearUserRequests = true)
         if (leavingNfc) {
             nfcReadGeneration.incrementAndGet()
@@ -124,6 +134,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (leavingBle) {
             ble = BleState()
+        }
+        if (leavingGnss) {
+            gnss = idleGnssState()
+        }
+        if (leavingAudio) {
+            audio = AudioState()
+        }
+        if (leavingMotion) {
+            motion = MotionSample()
+        }
+        if (leavingSuperpowers) {
+            superpowers = SuperpowerSensorState()
         }
         screen = target
 
@@ -138,6 +160,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         stopLiveModules(clearUserRequests = false)
 
         ble = BleState()
+        gnss = idleGnssState()
+        audio = AudioState()
+        motion = MotionSample()
+        superpowers = SuperpowerSensorState()
         nfc = NfcState(
             available = nfc.available,
             enabled = nfc.enabled,
@@ -295,6 +321,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startMotion() {
         if (!inForeground) return
+        motion = MotionSample()
         sensorsRepository.startMotion { sample ->
             post { motion = sample }
         }
@@ -302,6 +329,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startSuperpowers() {
         if (!inForeground) return
+        superpowers = SuperpowerSensorState()
         sensorsRepository.startSuperpowers { state ->
             post { superpowers = state }
         }
@@ -315,7 +343,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun stopGnss() {
         gnssRequested = false
         gnssRepository.stop()
-        gnss = gnss.copy(running = false)
+        gnss = idleGnssState()
     }
 
     fun startBle() {
@@ -337,7 +365,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun stopAudio() {
         audioRequested = false
         audioAnalyzer.stop()
-        audio = audio.copy(running = false, starting = false)
+        audio = AudioState()
     }
 
     fun onNfcTag(tag: Tag) {
@@ -456,6 +484,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             audioRequested = false
         }
     }
+
+    private fun idleGnssState(): GnssState = GnssState(
+        locationEnabled = gnss.locationEnabled,
+        gpsProviderEnabled = gnss.gpsProviderEnabled,
+        rawMeasurementsSupported = gnss.rawMeasurementsSupported,
+    )
 
     private fun currentNfcState(): NfcState {
         val adapter = NfcAdapter.getDefaultAdapter(
