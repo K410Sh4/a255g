@@ -30,6 +30,7 @@ class HardwareProbe(private val context: Context) {
         val metrics = context.resources.displayMetrics
         val display = context.getSystemService(DisplayManager::class.java)
             .getDisplay(Display.DEFAULT_DISPLAY)
+        val displayMode = display?.mode
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
 
         val batteryTempTenths = batteryIntent?.getIntExtra(
@@ -86,10 +87,10 @@ class HardwareProbe(private val context: Context) {
             lowRamDevice = activityManager.isLowRamDevice,
             totalStorageBytes = stat.totalBytes,
             freeStorageBytes = stat.availableBytes,
-            screenWidthPx = metrics.widthPixels,
-            screenHeightPx = metrics.heightPixels,
+            screenWidthPx = displayMode?.physicalWidth ?: metrics.widthPixels,
+            screenHeightPx = displayMode?.physicalHeight ?: metrics.heightPixels,
             densityDpi = metrics.densityDpi,
-            refreshRateHz = display?.refreshRate ?: 0f,
+            refreshRateHz = displayMode?.refreshRate ?: display?.refreshRate ?: 0f,
             glEsVersion = activityManager.deviceConfigurationInfo.glEsVersion,
             nfcAvailable = packageManager.hasSystemFeature(PackageManager.FEATURE_NFC),
             bluetoothLeAvailable = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE),

@@ -193,7 +193,7 @@ fun MagneticField3D(
             )
             val tip = Offset(center.x + projected.x, center.y + projected.y)
 
-            val strengthScale = (magnitude / 100f).coerceIn(0.18f, 1f)
+            val strengthScale = (magnitude / 100f).coerceIn(0f, 1f)
             drawCircle(
                 color = primary.copy(alpha = 0.08f),
                 radius = radius * strengthScale,
