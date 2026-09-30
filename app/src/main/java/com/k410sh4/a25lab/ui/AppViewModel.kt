@@ -88,6 +88,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var cameraProbeErrors by mutableStateOf<List<String>>(emptyList())
         private set
+    var inventoryWarnings by mutableStateOf<List<String>>(emptyList())
+        private set
     var audio by mutableStateOf(AudioState())
         private set
     var network by mutableStateOf(NetworkState())
@@ -97,6 +99,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     var computeResult by mutableStateOf<ComputeBenchmark.Result?>(null)
         private set
     var computeRunning by mutableStateOf(false)
+        private set
+    var computeError by mutableStateOf<String?>(null)
         private set
     var refreshRunning by mutableStateOf(false)
         private set
@@ -200,27 +204,37 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val nfcSnapshot = currentNfcState()
 
         ioExecutor.execute {
+            val warnings = mutableListOf<String>()
+
             val sensorList = runCatching {
                 sensorsRepository.listSensors()
-            }.getOrDefault(emptyList())
+            }.getOrElse { error ->
+                warnings += probeFailure("Sensores", error)
+                emptyList()
+            }
 
             val cameraResult = runCatching {
                 cameraProbe.probe()
             }.getOrElse { error ->
+                warnings += probeFailure("Camera2", error)
                 com.k410sh4.a25lab.model.CameraProbeResult(
-                    errors = listOf(
-                        error.message ?: "Falha inesperada no Camera2 probe.",
-                    ),
+                    errors = listOf("Falha global no Camera2 probe."),
                 )
             }
 
             val features = runCatching {
                 hardwareProbe.systemFeatures()
-            }.getOrDefault(emptyList())
+            }.getOrElse { error ->
+                warnings += probeFailure("System features", error)
+                emptyList()
+            }
 
             val networkSnapshot = runCatching {
                 networkProbe.snapshot()
-            }.getOrDefault(NetworkState())
+            }.getOrElse { error ->
+                warnings += probeFailure("Rede", error)
+                NetworkState()
+            }
 
             val deviceSnapshot = runCatching {
                 hardwareProbe.snapshot(
@@ -228,13 +242,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     sensorCount = sensorList.size,
                     featureCount = features.size,
                 )
-            }.getOrNull()
+            }.getOrElse { error ->
+                warnings += probeFailure("Dispositivo/build", error)
+                null
+            }
 
             val text = ReportFormatter.build(
                 snapshot = deviceSnapshot,
                 sensors = sensorList,
                 cameras = cameraResult.cameras,
                 cameraProbeErrors = cameraResult.errors,
+                probeWarnings = warnings,
                 systemFeatures = features,
                 network = networkSnapshot,
                 nfc = nfcSnapshot,
@@ -248,6 +266,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 sensors = sensorList
                 cameras = cameraResult.cameras
                 cameraProbeErrors = cameraResult.errors
+                inventoryWarnings = warnings.toList()
                 systemFeatures = features
                 network = networkSnapshot
                 nfc = nfcSnapshot
@@ -405,14 +424,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
         computeRunning = true
         computeResult = null
+        computeError = null
 
         computeExecutor.execute {
-            val result = runCatching {
+            val attempt = runCatching {
                 computeBenchmark.run()
-            }.getOrNull()
+            }
 
             post {
-                computeResult = result
+                computeResult = attempt.getOrNull()
+                computeError = attempt.exceptionOrNull()?.let { error ->
+                    "Benchmark falhou: ${error::class.java.simpleName}"
+                }
                 computeRunning = false
             }
         }
@@ -423,6 +446,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         sensors = sensors,
         cameras = cameras,
         cameraProbeErrors = cameraProbeErrors,
+        probeWarnings = inventoryWarnings,
         systemFeatures = systemFeatures,
         network = network,
         nfc = nfc,
@@ -484,6 +508,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             audioRequested = false
         }
     }
+
+    private fun probeFailure(
+        component: String,
+        error: Throwable,
+    ): String = "$component: ${error::class.java.simpleName}"
 
     private fun idleGnssState(): GnssState = GnssState(
         locationEnabled = gnss.locationEnabled,

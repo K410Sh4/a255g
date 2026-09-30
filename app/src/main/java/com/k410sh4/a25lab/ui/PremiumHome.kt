@@ -31,6 +31,7 @@ fun PremiumDashboardScreen(
     device: DeviceSnapshot?,
     copyStatus: String,
     refreshRunning: Boolean,
+    inventoryWarnings: List<String>,
     onRefresh: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit,
@@ -156,6 +157,30 @@ fun PremiumDashboardScreen(
                 accent = CategoryAccent.Tertiary,
                 onClick = { onNavigate(Screen.Lab) },
             )
+        }
+
+        if (inventoryWarnings.isNotEmpty()) {
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            "Diagnóstico do inventário",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        inventoryWarnings.forEach { warning ->
+                            Text(
+                                "• $warning",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         item {

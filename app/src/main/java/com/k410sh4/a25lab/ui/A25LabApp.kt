@@ -121,6 +121,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         device = viewModel.device,
                         copyStatus = viewModel.copyStatus,
                         refreshRunning = viewModel.refreshRunning,
+                        inventoryWarnings = viewModel.inventoryWarnings,
                         onRefresh = viewModel::refreshAllAndCopy,
                         onCopy = viewModel::copySpecificationsToClipboard,
                         onNavigate = viewModel::navigate,
@@ -243,6 +244,7 @@ fun A25LabApp(viewModel: AppViewModel) {
                         running = viewModel.computeRunning,
                         elapsedMs = viewModel.computeResult?.elapsedMs,
                         gflops = viewModel.computeResult?.estimatedGflops,
+                        error = viewModel.computeError,
                         onRun = viewModel::runCpuBaseline,
                     )
                 }

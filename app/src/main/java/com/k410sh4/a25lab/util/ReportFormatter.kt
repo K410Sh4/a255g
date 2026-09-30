@@ -15,6 +15,7 @@ object ReportFormatter {
         sensors: List<SensorInfo>,
         cameras: List<CameraInfo>,
         cameraProbeErrors: List<String> = emptyList(),
+        probeWarnings: List<String> = emptyList(),
         systemFeatures: List<SystemFeatureInfo> = emptyList(),
         network: NetworkState = NetworkState(),
         nfc: NfcState = NfcState(),

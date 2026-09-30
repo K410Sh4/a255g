@@ -383,6 +383,7 @@ fun PremiumComputeScreen(
     running: Boolean,
     elapsedMs: Long?,
     gflops: Double?,
+    error: String?,
     onRun: () -> Unit,
 ) {
     ToolPage(modifier, "LABORATÓRIO", "Compute / IA", "Baseline verificável antes de comparar backends de ML.") {
@@ -397,6 +398,7 @@ fun PremiumComputeScreen(
         )
         CompactFact("Carga", "Matriz 160×160 FP32")
         CompactFact("Medição", "1 aquecimento + mediana de 3 execuções")
+        error?.let { ErrorMessage(it) }
         Button(
             onClick = onRun,
             enabled = !running,

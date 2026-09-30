@@ -98,6 +98,7 @@ class ReportFormatterTest {
                 ),
             ),
             cameraProbeErrors = listOf("ID 2: probe parcial"),
+            probeWarnings = listOf("Rede: IllegalStateException"),
             systemFeatures = listOf(SystemFeatureInfo("android.hardware.nfc", 0)),
             nfc = NfcState(
                 available = true,
@@ -115,6 +116,8 @@ class ReportFormatterTest {
         assertTrue(report.contains("Build fingerprint: fingerprint"))
         assertTrue(report.contains("Falhas parciais do Camera2 probe"))
         assertTrue(report.contains("ID 2: probe parcial"))
+        assertTrue(report.contains("[AVISOS DO PROBE]"))
+        assertTrue(report.contains("Rede: IllegalStateException"))
         assertTrue(report.contains("Inventário não inclui: IMEI"))
         assertFalse(report.contains("DEADBEEF"))
         assertFalse(report.contains("SECRET-NDEF"))

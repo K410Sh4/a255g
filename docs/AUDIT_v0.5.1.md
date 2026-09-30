@@ -102,3 +102,8 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 59. **Métricas live obsoletas** — Áudio, GNSS e sensores podiam continuar mostrando valores da sessão anterior após parar/sair/ocultar o app. Os estados transitórios agora são zerados nas transições correspondentes.
 60. **Sanitização quebrava emoji/idiomas legítimos** — ZWNJ/ZWJ eram tratados como controles perigosos. Eles passam a ser preservados; controles bidi e de direção continuam neutralizados.
 61. **Actions da CI dependiam de tags mutáveis** — checkout, setup-java, setup-gradle e upload-artifact agora são fixados em commits imutáveis, mantendo comentário com o major correspondente.
+
+
+62. **Falhas silenciosas no inventário estático** — sensores, system features, rede e snapshot usavam fallback vazio sem deixar claro que havia ocorrido exceção. O snapshot agora mantém avisos de probe no estado, dashboard e relatório exportado.
+63. **Benchmark CPU falhava sem explicação** — exceções do benchmark agora viram diagnóstico visível em vez de simplesmente retornar para “Não medido”.
+64. **Diagnóstico evita vazar mensagens arbitrárias de exceção** — os avisos persistidos registram componente + classe da exceção; mensagens internas potencialmente sensíveis não são copiadas automaticamente para o relatório.
