@@ -14,6 +14,7 @@ import android.os.StatFs
 import android.view.Display
 import com.k410sh4.a25lab.model.DeviceSnapshot
 import com.k410sh4.a25lab.model.SystemFeatureInfo
+import com.k410sh4.a25lab.util.glEsVersionName
 
 class HardwareProbe(private val context: Context) {
     fun snapshot(
@@ -46,7 +47,7 @@ class HardwareProbe(private val context: Context) {
         val batteryLevelRaw = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val batteryScale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
         val batteryLevel = if (batteryLevelRaw >= 0 && batteryScale > 0) {
-            ((batteryLevelRaw * 100f) / batteryScale).toInt()
+            ((batteryLevelRaw * 100f) / batteryScale).toInt().coerceIn(0, 100)
         } else {
             null
         }
@@ -119,5 +120,5 @@ class HardwareProbe(private val context: Context) {
             .sortedBy { it.name }
 
     private fun featureName(feature: FeatureInfo): String =
-        feature.name ?: "OpenGL ES ${feature.glEsVersion}"
+        feature.name ?: "OpenGL ES ${glEsVersionName(feature.glEsVersion)}"
 }
