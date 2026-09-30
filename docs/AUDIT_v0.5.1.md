@@ -58,3 +58,7 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 
 32. **API 37 indisponível no canal estável da CI** — a tentativa objetiva de instalar `platforms;android-37` falhou no `sdkmanager` do runner. Compile/target permanecem em 36 até a plataforma 37 estar disponível no canal estável; o aviso `OldTargetApi` é desabilitado de forma documentada, sem esconder outros warnings.
 33. **Actions em runtime Node 20** — o runner já sinalizou depreciação para `actions/checkout@v4` e `actions/upload-artifact@v4`. A CI foi migrada para majors com Node 24 (`checkout@v6` e `upload-artifact@v6`).
+
+
+34. **AndroidX mais novo incompatível com compileSdk 36** — a atualização para Compose 1.12.1/Core 1.19.1/Lifecycle 2.11.0 falhou objetivamente em `checkDebugAarMetadata`: esses artefatos exigem compileSdk 37. Como API 37 não está disponível no canal estável da CI, as versões que já passaram na baseline foram restauradas. O lint ignora apenas `OldTargetApi` e `GradleDependency` por decisão documentada; demais warnings continuam promovidos a erro.
+35. **setup-gradle ainda em Node 20** — o log da CI apontou `gradle/actions/setup-gradle@v4`. A action foi atualizada para `@v6`, cujo runtime é Node 24 segundo a documentação atual do projeto.
