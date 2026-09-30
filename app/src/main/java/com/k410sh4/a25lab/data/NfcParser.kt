@@ -7,6 +7,7 @@ import java.nio.charset.Charset
 import java.util.Locale
 
 object NfcParser {
+    private const val MAX_NDEF_TEXT_CHARS = 4_096
     fun parse(tag: Tag, available: Boolean, enabled: Boolean): NfcState {
         val idHex = tag.id.joinToString("") { "%02X".format(Locale.US, it.toInt() and 0xFF) }
         val techs = tag.techList.map { it.substringAfterLast('.') }
@@ -37,6 +38,9 @@ object NfcParser {
         val languageLength = status and 0x3F
         if (1 + languageLength > payload.size) return null
         val charset = if (utf16) Charset.forName("UTF-16") else Charsets.UTF_8
-        return payload.copyOfRange(1 + languageLength, payload.size).toString(charset)
+        return payload
+            .copyOfRange(1 + languageLength, payload.size)
+            .toString(charset)
+            .take(MAX_NDEF_TEXT_CHARS)
     }
 }

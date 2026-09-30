@@ -23,7 +23,7 @@ object ReportFormatter {
 
         return buildString {
             appendLine("A25 LAB — INVENTÁRIO INTERNO COMPLETO")
-            appendLine("Gerado localmente pelo aparelho. Nenhum identificador pessoal é coletado.")
+            appendLine("Gerado localmente pelo aparelho. Este inventário não inclui identificadores pessoais.")
             appendLine()
 
             appendLine("[DISPOSITIVO / BUILD]")

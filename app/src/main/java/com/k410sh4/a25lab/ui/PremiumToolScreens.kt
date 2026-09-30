@@ -309,7 +309,7 @@ fun PremiumNfcScreen(
         CompactFact("Última tag", state.lastTagIdHex ?: "Aproxime uma tag NFC")
         CompactFact("Tecnologias", state.technologies.joinToString().ifBlank { "N/D" })
         state.ndefText?.let { CompactFact("NDEF Text", it) }
-        HintText("Reader Mode é ativado somente enquanto o A25 Lab está em primeiro plano.")
+        HintText("Reader Mode fica ativo somente nesta tela. Ao sair, os dados da última tag são descartados da memória da sessão.")
     }
 }
 

@@ -47,3 +47,10 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 24. **Estado inicial de foreground incorreto** — o ViewModel podia considerar o app visível antes do primeiro `onResume`, permitindo efeito tardio de clipboard durante inicialização. O estado agora começa suspenso e só muda no lifecycle real.
 25. **Unidades de armazenamento ambíguas** — o formatter dividia por 1024 mas rotulava KB/MB/GB, e o `StatFs(filesDir)` era apresentado como armazenamento físico total. O relatório agora usa KiB/MiB/GiB e identifica corretamente a partição de dados acessível ao app.
 26. **GNSS não retomava após reativar localização** — se o usuário desligasse e religasse a localização durante uma sessão ativa, o estado voltava mas os callbacks não. O receiver de mudança de modo reinicia a sessão somente enquanto o pedido do usuário continua ativo.
+
+
+27. **Preview de clipboard exposto** — o relatório de hardware podia aparecer em texto claro na prévia visual do clipboard do Android. A cópia agora usa o hint `android.content.extra.IS_SENSITIVE`; a compatibilidade final depende do sistema respeitar esse hint.
+28. **Dados NFC persistindo durante a sessão** — UID/tecnologias/NDEF permaneciam em memória após sair da tela NFC. Agora os dados transitórios da tag são descartados ao navegar para outra tela.
+29. **NDEF sem limite de apresentação** — payloads de texto grandes podiam causar UI desnecessariamente pesada. A apresentação é limitada a 4096 caracteres sem alterar a leitura técnica das tecnologias da tag.
+30. **Dependências e SDK defasados** — lint apontava Android API 37 e versões estáveis mais recentes de AndroidX/Compose. O projeto foi elevado para compile/target 37 e versões estáveis atuais, com warnings de lint promovidos a erro.
+31. **Instrumentation sem verificação de compilação** — a CI agora também monta o APK de testes instrumentados, garantindo que a suíte Android continue compilável mesmo antes de adicionarmos execução em emulador/dispositivo.

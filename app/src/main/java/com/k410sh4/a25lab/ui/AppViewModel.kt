@@ -3,6 +3,7 @@ package com.k410sh4.a25lab.ui
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.os.PersistableBundle
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.Handler
@@ -105,7 +106,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun navigate(target: Screen) {
         if (screen == target) return
 
+        val leavingNfc = screen == Screen.Nfc && target != Screen.Nfc
         stopLiveModules(clearUserRequests = true)
+        if (leavingNfc) {
+            val current = currentNfcState()
+            nfc = NfcState(
+                available = current.available,
+                enabled = current.enabled,
+            )
+        }
         screen = target
 
         if (target == Screen.Network) refreshNetwork()
@@ -236,12 +245,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val text = report()
         val generation = reportGeneration.incrementAndGet()
         val clipboardResult = runCatching {
-            clipboard.setPrimaryClip(
-                ClipData.newPlainText(
-                    "A25 Lab — especificações internas",
-                    text,
-                ),
-            )
+            clipboard.setPrimaryClip(reportClip(text))
         }
 
         copyStatus = if (clipboardResult.isSuccess) {
@@ -438,12 +442,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         val generation = reportGeneration.incrementAndGet()
         val clipboardResult = runCatching {
-            clipboard.setPrimaryClip(
-                ClipData.newPlainText(
-                    "A25 Lab — especificações internas",
-                    text,
-                ),
-            )
+            clipboard.setPrimaryClip(reportClip(text))
         }
 
         if (reportGeneration.get() != generation) return
@@ -461,6 +460,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 "Falha ao copiar e ao salvar o inventário."
         }
     }
+
+    private fun reportClip(text: String): ClipData =
+        ClipData.newPlainText(
+            "A25 Lab — especificações internas",
+            text,
+        ).apply {
+            description.extras = PersistableBundle().apply {
+                putBoolean(
+                    "android.content.extra.IS_SENSITIVE",
+                    true,
+                )
+            }
+        }
 
     private fun post(block: () -> Unit) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
