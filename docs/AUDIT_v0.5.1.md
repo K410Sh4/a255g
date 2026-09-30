@@ -107,3 +107,9 @@ Esses itens permanecem explicitamente classificados como **REQUER TESTE EM DISPO
 62. **Falhas silenciosas no inventário estático** — sensores, system features, rede e snapshot usavam fallback vazio sem deixar claro que havia ocorrido exceção. O snapshot agora mantém avisos de probe no estado, dashboard e relatório exportado.
 63. **Benchmark CPU falhava sem explicação** — exceções do benchmark agora viram diagnóstico visível em vez de simplesmente retornar para “Não medido”.
 64. **Diagnóstico evita vazar mensagens arbitrárias de exceção** — os avisos persistidos registram componente + classe da exceção; mensagens internas potencialmente sensíveis não são copiadas automaticamente para o relatório.
+
+
+65. **OpenGL ES em system features podia aparecer como inteiro codificado** — `FeatureInfo.glEsVersion` usa major/minor empacotados em 32 bits. O inventário agora decodifica corretamente, por exemplo `0x00030002 → 3.2`, com teste unitário.
+66. **Percentual de bateria não era limitado** — valores anômalos vindos do sticky intent podiam produzir porcentagem fora de 0–100. O snapshot agora faz clamp defensivo.
+67. **Strings locais podiam corromper a estrutura do relatório exportado** — campos de build, sensores, câmeras, erros e system features passam pelo mesmo sanitizador de linha única antes de copiar/compartilhar.
+68. **Sanitizador de linha única não tinha regressão própria** — foi adicionado teste garantindo remoção de newline/tab sem quebrar Unicode normal.
