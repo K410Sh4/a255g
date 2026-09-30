@@ -123,11 +123,19 @@ fun PremiumGnssScreen(
         )
         CompactFact(
             "Localização do Android",
-            if (state.locationEnabled) "ativada" else "desativada",
+            when (state.locationEnabled) {
+                true -> "ativada"
+                false -> "desativada"
+                null -> "não verificada"
+            },
         )
         CompactFact(
             "Provedor GPS",
-            if (state.gpsProviderEnabled) "disponível" else "indisponível",
+            when (state.gpsProviderEnabled) {
+                true -> "disponível"
+                false -> "indisponível"
+                null -> "não verificado"
+            },
         )
         CompactFact(
             "Receptor GNSS",
@@ -135,7 +143,11 @@ fun PremiumGnssScreen(
         )
         CompactFact(
             "GNSS raw anunciado",
-            if (state.rawMeasurementsSupported) "sim" else "não",
+            when (state.rawMeasurementsSupported) {
+                true -> "sim"
+                false -> "não"
+                null -> "não verificado"
+            },
         )
         CompactFact(
             "GNSS raw ativo",
@@ -221,7 +233,11 @@ fun PremiumAudioScreen(
     ToolPage(modifier, "PERCEPÇÃO", "Ouvido espectral", "Análise local do microfone em tempo real.") {
         HeroTile(
             "Frequência dominante",
-            String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz),
+            if (state.running) {
+                String.format(Locale.US, "%.1f Hz", state.dominantFrequencyHz)
+            } else {
+                "N/D"
+            },
             Modifier.fillMaxWidth(),
         )
         Row(
@@ -230,7 +246,11 @@ fun PremiumAudioScreen(
         ) {
             HeroTile(
                 "Nível",
-                String.format(Locale.US, "%.1f dBFS", state.rmsDbFs),
+                if (state.running) {
+                    String.format(Locale.US, "%.1f dBFS", state.rmsDbFs)
+                } else {
+                    "N/D"
+                },
                 Modifier.weight(1f),
             )
             HeroTile(
