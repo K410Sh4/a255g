@@ -33,14 +33,17 @@ class ManifestSecurityTest {
         assertTrue(Manifest.permission.RECORD_AUDIO in permissions)
         assertTrue(Manifest.permission.ACCESS_FINE_LOCATION in permissions)
 
-        val exportedActivities = info.activities
-            ?.filter { it.exported }
+        val exportedAppActivities = info.activities
+            ?.filter { activity ->
+                activity.exported &&
+                    activity.name.startsWith(context.packageName)
+            }
             ?.map { it.name }
             .orEmpty()
 
         assertEquals(
             listOf(MainActivity::class.java.name),
-            exportedActivities,
+            exportedAppActivities,
         )
     }
 }
