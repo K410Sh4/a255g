@@ -46,7 +46,7 @@ object ReportFormatter {
 
             appendLine("[SOC / CPU / ABI]")
             appendLine("SoC: ${safeLine(snapshot.socManufacturer)} ${safeLine(snapshot.socModel)}")
-            appendLine("CPU cores lógicos: ${snapshot.cpuCores}")
+            appendLine("Processadores disponíveis à JVM: ${snapshot.cpuCores}")
             appendLine("ABIs: ${safeLine(snapshot.supportedAbis.joinToString().ifBlank { "N/D" })}")
             appendLine("ABIs 32-bit: ${safeLine(snapshot.supported32BitAbis.joinToString().ifBlank { "nenhuma" })}")
             appendLine("ABIs 64-bit: ${safeLine(snapshot.supported64BitAbis.joinToString().ifBlank { "nenhuma" })}")

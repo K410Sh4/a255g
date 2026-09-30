@@ -28,6 +28,7 @@ class AudioAnalyzer(private val context: Context) {
         val record: AudioRecord,
         val sourceLabel: String,
         val fallbackUsed: Boolean,
+        val sampleRateHz: Int,
     )
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -151,6 +152,7 @@ class AudioAnalyzer(private val context: Context) {
                     ),
                     sourceLabel = "UNPROCESSED solicitado",
                     fallbackUsed = false,
+                    sampleRateHz = SAMPLE_RATE,
                 )
             }.getOrElse {
                 OpenedRecorder(
@@ -161,6 +163,7 @@ class AudioAnalyzer(private val context: Context) {
                     ),
                     sourceLabel = "MIC (fallback)",
                     fallbackUsed = true,
+                    sampleRateHz = SAMPLE_RATE,
                 )
             }
         } catch (error: Exception) {
@@ -175,14 +178,19 @@ class AudioAnalyzer(private val context: Context) {
             return
         }
 
+        val actualSampleRate = opened.record.sampleRate
+            .takeIf { it > 0 }
+            ?: opened.sampleRateHz
+        val activeOpened = opened.copy(sampleRateHz = actualSampleRate)
+
         if (generation.get() != session || closed) {
-            releaseRecorder(opened.record)
+            releaseRecorder(activeOpened.record)
             return
         }
 
         val accepted = synchronized(recorderLock) {
             if (generation.get() == session && !closed) {
-                recorder = opened.record
+                recorder = activeOpened.record
                 true
             } else {
                 false
@@ -190,24 +198,25 @@ class AudioAnalyzer(private val context: Context) {
         }
 
         if (!accepted) {
-            releaseRecorder(opened.record)
+            releaseRecorder(activeOpened.record)
             return
         }
 
         onState(
             AudioState(
                 running = true,
-                sampleRateHz = SAMPLE_RATE,
-                sourceLabel = opened.sourceLabel,
-                fallbackUsed = opened.fallbackUsed,
+                sampleRateHz = activeOpened.sampleRateHz,
+                sourceLabel = activeOpened.sourceLabel,
+                fallbackUsed = activeOpened.fallbackUsed,
             ),
         )
 
         loop(
             session = session,
-            record = opened.record,
-            sourceLabel = opened.sourceLabel,
-            fallbackUsed = opened.fallbackUsed,
+            record = activeOpened.record,
+            sampleRateHz = activeOpened.sampleRateHz,
+            sourceLabel = activeOpened.sourceLabel,
+            fallbackUsed = activeOpened.fallbackUsed,
             onState = onState,
         )
     }
@@ -246,6 +255,7 @@ class AudioAnalyzer(private val context: Context) {
     private fun loop(
         session: Long,
         record: AudioRecord,
+        sampleRateHz: Int,
         sourceLabel: String,
         fallbackUsed: Boolean,
         onState: (AudioState) -> Unit,
@@ -278,7 +288,7 @@ class AudioAnalyzer(private val context: Context) {
                             session,
                             onState,
                             AudioState(
-                                sampleRateHz = SAMPLE_RATE,
+                                sampleRateHz = sampleRateHz,
                                 sourceLabel = sourceLabel,
                                 fallbackUsed = fallbackUsed,
                                 lastError = error.message
@@ -296,7 +306,7 @@ class AudioAnalyzer(private val context: Context) {
                                 session,
                                 onState,
                                 AudioState(
-                                    sampleRateHz = SAMPLE_RATE,
+                                    sampleRateHz = sampleRateHz,
                                     sourceLabel = sourceLabel,
                                     fallbackUsed = fallbackUsed,
                                     lastError = audioReadError(read),
@@ -329,7 +339,7 @@ class AudioAnalyzer(private val context: Context) {
                 }
 
                 val dominant = if (dbFs >= MIN_SPECTRAL_LEVEL_DBFS) {
-                    fft.dominantFrequency(frame, SAMPLE_RATE)
+                    fft.dominantFrequency(frame, sampleRateHz)
                 } else {
                     0f
                 }
@@ -342,7 +352,7 @@ class AudioAnalyzer(private val context: Context) {
                         sampleReady = true,
                         rmsDbFs = dbFs.coerceAtLeast(-120f),
                         dominantFrequencyHz = dominant,
-                        sampleRateHz = SAMPLE_RATE,
+                        sampleRateHz = sampleRateHz,
                         sourceLabel = sourceLabel,
                         fallbackUsed = fallbackUsed,
                     ),

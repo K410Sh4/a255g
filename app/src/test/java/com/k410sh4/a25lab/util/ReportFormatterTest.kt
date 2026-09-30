@@ -124,6 +124,8 @@ class ReportFormatterTest {
         assertTrue(report.contains("[AVISOS DO PROBE]"))
         assertTrue(report.contains("Rede: IllegalStateException"))
         assertTrue(report.contains("Erro de leitura: Rede: IllegalStateException"))
+        assertTrue(report.contains("Downstream declarado: N/D"))
+        assertTrue(report.contains("Upstream declarado: N/D"))
         assertTrue(report.contains("Inventário não inclui: IMEI"))
         assertFalse(report.contains("DEADBEEF"))
         assertFalse(report.contains("SECRET-NDEF"))

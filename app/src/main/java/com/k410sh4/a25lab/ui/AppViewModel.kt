@@ -225,92 +225,110 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         copyStatus = "Lendo capacidades do aparelho…"
         val nfcSnapshot = currentNfcState()
 
-        ioExecutor.execute {
-            val warnings = mutableListOf<String>()
+        try {
+            ioExecutor.execute {
+                runCatching {
+                    val warnings = mutableListOf<String>()
 
-            val sensorList = runCatching {
-                sensorsRepository.listSensors()
-            }.getOrElse { error ->
-                warnings += probeFailure("Sensores", error)
-                emptyList()
-            }
+                    val sensorList = runCatching {
+                        sensorsRepository.listSensors()
+                    }.getOrElse { error ->
+                        warnings += probeFailure("Sensores", error)
+                        emptyList()
+                    }
 
-            val cameraResult = runCatching {
-                cameraProbe.probe()
-            }.getOrElse { error ->
-                warnings += probeFailure("Camera2", error)
-                com.k410sh4.a25lab.model.CameraProbeResult(
-                    errors = listOf("Falha global no Camera2 probe."),
-                )
-            }
+                    val cameraResult = runCatching {
+                        cameraProbe.probe()
+                    }.getOrElse { error ->
+                        warnings += probeFailure("Camera2", error)
+                        com.k410sh4.a25lab.model.CameraProbeResult(
+                            errors = listOf("Falha global no Camera2 probe."),
+                        )
+                    }
 
-            val features = runCatching {
-                hardwareProbe.systemFeatures()
-            }.getOrElse { error ->
-                warnings += probeFailure("System features", error)
-                emptyList()
-            }
+                    val features = runCatching {
+                        hardwareProbe.systemFeatures()
+                    }.getOrElse { error ->
+                        warnings += probeFailure("System features", error)
+                        emptyList()
+                    }
 
-            val networkSnapshot = runCatching {
-                networkProbe.snapshot()
-            }.getOrElse { error ->
-                val warning = probeFailure("Rede", error)
-                warnings += warning
-                NetworkState(lastError = warning)
-            }
+                    val networkSnapshot = runCatching {
+                        networkProbe.snapshot()
+                    }.getOrElse { error ->
+                        val warning = probeFailure("Rede", error)
+                        warnings += warning
+                        NetworkState(lastError = warning)
+                    }
 
-            val deviceSnapshot = runCatching {
-                hardwareProbe.snapshot(
-                    cameraCount = cameraResult.totalIds,
-                    sensorCount = sensorList.size,
-                    featureCount = features.size,
-                )
-            }.getOrElse { error ->
-                warnings += probeFailure("Dispositivo/build", error)
-                null
-            }
+                    val deviceSnapshot = runCatching {
+                        hardwareProbe.snapshot(
+                            cameraCount = cameraResult.totalIds,
+                            sensorCount = sensorList.size,
+                            featureCount = features.size,
+                        )
+                    }.getOrElse { error ->
+                        warnings += probeFailure("Dispositivo/build", error)
+                        null
+                    }
 
-            val text = ReportFormatter.build(
-                snapshot = deviceSnapshot,
-                sensors = sensorList,
-                cameras = cameraResult.cameras,
-                cameraProbeErrors = cameraResult.errors,
-                probeWarnings = warnings,
-                systemFeatures = features,
-                network = networkSnapshot,
-                nfc = nfcSnapshot,
-            )
-
-            val fileResult = runCatching {
-                if (deviceSnapshot != null) snapshotFile.writeText(text)
-            }
-
-            post {
-                sensors = sensorList
-                cameras = cameraResult.cameras
-                cameraProbeErrors = cameraResult.errors
-                inventoryWarnings = warnings.toList()
-                systemFeatures = features
-                network = networkSnapshot
-                nfc = nfcSnapshot
-                device = deviceSnapshot
-                refreshRunning = false
-
-                if (deviceSnapshot == null) {
-                    copyStatus = "Snapshot indisponível; consulte os detalhes do laboratório."
-                } else if (inForeground) {
-                    copyReportToClipboardAndPublishStatus(
-                        text = text,
-                        fileSaved = fileResult.isSuccess,
-                        automatic = true,
+                    val text = ReportFormatter.build(
+                        snapshot = deviceSnapshot,
+                        sensors = sensorList,
+                        cameras = cameraResult.cameras,
+                        cameraProbeErrors = cameraResult.errors,
+                        probeWarnings = warnings,
+                        systemFeatures = features,
+                        network = networkSnapshot,
+                        nfc = nfcSnapshot,
                     )
-                } else {
-                    pendingAutomaticReport =
-                        text to fileResult.isSuccess
-                    copyStatus =
-                        "Inventário salvo; a cópia automática aguardará o retorno ao app."
+
+                    val fileSaved = runCatching {
+                        if (deviceSnapshot != null) {
+                            snapshotFile.writeText(text)
+                        }
+                    }.isSuccess
+
+                    post {
+                        sensors = sensorList
+                        cameras = cameraResult.cameras
+                        cameraProbeErrors = cameraResult.errors
+                        inventoryWarnings = warnings.toList()
+                        systemFeatures = features
+                        network = networkSnapshot
+                        nfc = nfcSnapshot
+                        device = deviceSnapshot
+                        refreshRunning = false
+
+                        if (deviceSnapshot == null) {
+                            copyStatus =
+                                "Snapshot indisponível; consulte os detalhes do laboratório."
+                        } else if (inForeground) {
+                            copyReportToClipboardAndPublishStatus(
+                                text = text,
+                                fileSaved = fileSaved,
+                                automatic = true,
+                            )
+                        } else {
+                            pendingAutomaticReport = text to fileSaved
+                            copyStatus =
+                                "Inventário salvo; a cópia automática aguardará o retorno ao app."
+                        }
+                    }
+                }.onFailure { error ->
+                    post {
+                        refreshRunning = false
+                        val warning = probeFailure("Inventário", error)
+                        inventoryWarnings =
+                            (inventoryWarnings + warning).distinct()
+                        copyStatus =
+                            "Falha inesperada no inventário: ${error::class.java.simpleName}"
+                    }
                 }
             }
+        } catch (_: RejectedExecutionException) {
+            refreshRunning = false
+            copyStatus = "Executor do inventário indisponível."
         }
     }
 
@@ -344,23 +362,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             "Falha ao copiar para a área de transferência."
         }
 
-        ioExecutor.execute {
-            val fileSaved = runCatching {
-                snapshotFile.writeText(text)
-            }.isSuccess
+        try {
+            ioExecutor.execute {
+                val fileSaved = runCatching {
+                    snapshotFile.writeText(text)
+                }.isSuccess
 
-            post {
-                if (reportGeneration.get() != generation) return@post
-                copyStatus = when {
-                    clipboardResult.isSuccess && fileSaved ->
-                        "Relatório copiado e snapshot privado atualizado."
-                    clipboardResult.isSuccess ->
-                        "Relatório copiado; falha ao atualizar o snapshot privado."
-                    fileSaved ->
-                        "Falha no clipboard; snapshot privado foi atualizado."
-                    else ->
-                        "Falha ao copiar e ao salvar o snapshot privado."
+                post {
+                    if (reportGeneration.get() != generation) return@post
+                    copyStatus = when {
+                        clipboardResult.isSuccess && fileSaved ->
+                            "Relatório copiado e snapshot privado atualizado."
+                        clipboardResult.isSuccess ->
+                            "Relatório copiado; falha ao atualizar o snapshot privado."
+                        fileSaved ->
+                            "Falha no clipboard; snapshot privado foi atualizado."
+                        else ->
+                            "Falha ao copiar e ao salvar o snapshot privado."
+                    }
                 }
+            }
+        } catch (_: RejectedExecutionException) {
+            copyStatus = if (clipboardResult.isSuccess) {
+                "Relatório copiado; executor de persistência indisponível."
+            } else {
+                "Falha no clipboard e executor de persistência indisponível."
             }
         }
     }
