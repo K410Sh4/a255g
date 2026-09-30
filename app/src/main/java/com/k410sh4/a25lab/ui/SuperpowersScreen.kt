@@ -278,7 +278,7 @@ fun EnvironmentScreen(
             }
         }
 
-        item { Spacer        item { Spacer(Modifier.height(24.dp)) }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
