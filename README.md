@@ -28,7 +28,7 @@ O aplicativo consulta o Android/firmware/HAL e mostra o que está realmente expo
 ## Stack
 
 - Kotlin
-- Jetpack Compose + Material 3
+- Jetpack Compose 1.11.4 + Material 3 1.3.2
 - Android Gradle Plugin 9.4.1
 - Gradle 9.6.0 na CI
 - compile/target SDK 36
@@ -65,3 +65,8 @@ APK:
 5. somente depois considerar modo avançado ADB/Shizuku para diagnósticos adicionais.
 
 Veja `docs/ARCHITECTURE.md`.
+
+
+### Nota de compatibilidade do CI
+
+O runner atual não disponibiliza `platforms;android-37` via SDK Manager. As bibliotecas Compose foram fixadas na linha 1.11.4 e Lifecycle 2.10.0, anteriores à migração transitiva para compileSdk 37, mantendo compile/target SDK 36 sem suprimir a validação de AAR metadata.
