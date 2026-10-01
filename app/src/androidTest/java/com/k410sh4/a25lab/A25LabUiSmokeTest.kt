@@ -29,6 +29,8 @@ class A25LabUiSmokeTest {
             .performScrollToNode(hasText("GENESIS"))
         composeRule.onNodeWithText("GENESIS").performClick()
         composeRule.onNodeWithText("Memória aprendente v0.1").assertIsDisplayed()
+        composeRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText("Importar PDF"))
         composeRule.onNodeWithText("Importar PDF").assertIsDisplayed()
     }
 }
