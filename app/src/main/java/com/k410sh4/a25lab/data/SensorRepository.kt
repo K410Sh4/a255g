@@ -96,16 +96,18 @@ class SensorRepository(context: Context) : SensorEventListener {
         lastRotationTimestampNs = 0L
         smoothedQuaternion = QuaternionMath.Identity
 
-        val allSensors = manager.getSensorList(Sensor.TYPE_ALL)
+        val allSensors = safeAllSensors()
         val cct = allSensors.firstOrNull { it.stringType == CCT_STRING_TYPE }
         val aois = allSensors.firstOrNull { it.stringType == AOIS_STRING_TYPE }
         val vdis = allSensors.firstOrNull { it.stringType == VDIS_STRING_TYPE }
-        val rotation = manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        val linearAcceleration = manager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        val rotation = safeGetDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        val linearAcceleration =
+            safeGetDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
 
-        usingLinearAccelerationSensor = linearAcceleration?.let {
-            manager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
-        } == true
+        usingLinearAccelerationSensor = safeRegister(
+            linearAcceleration,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
 
         val fallbackAccelerationRegistered = if (!usingLinearAccelerationSensor) {
             registerDefault(
@@ -116,9 +118,10 @@ class SensorRepository(context: Context) : SensorEventListener {
             false
         }
 
-        val rotationRegistered = rotation?.let {
-            manager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
-        } == true
+        val rotationRegistered = safeRegister(
+            rotation,
+            SensorManager.SENSOR_DELAY_GAME,
+        )
 
         val angularRegistered = registerDefault(
             Sensor.TYPE_GYROSCOPE,
@@ -153,16 +156,19 @@ class SensorRepository(context: Context) : SensorEventListener {
             vdisMinDelayUs = vdis?.minDelay,
         )
 
-        val cctActive = cct?.let {
-            manager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-        } ?: false
+        val cctActive = safeRegister(
+            cct,
+            SensorManager.SENSOR_DELAY_NORMAL,
+        )
 
         latestSuperpower = latestSuperpower.copy(cctStreamActive = cctActive)
         onState(latestSuperpower)
     }
 
     fun stopMotion() {
-        manager.unregisterListener(this)
+        runCatching {
+            manager.unregisterListener(this)
+        }
         motionCallback = null
         superpowerCallback = null
         lastMotionPublishNs = 0L
@@ -172,8 +178,12 @@ class SensorRepository(context: Context) : SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        updateMotion(event)
-        updateSuperpowers(event)
+        try {
+            updateMotion(event)
+            updateSuperpowers(event)
+        } catch (_: RuntimeException) {
+            // OEM/vendor sensor payloads must never terminate the app.
+        }
     }
 
     private fun updateMotion(event: SensorEvent) {
@@ -353,10 +363,37 @@ class SensorRepository(context: Context) : SensorEventListener {
         callback(latestSuperpower)
     }
 
-    private fun registerDefault(type: Int, rate: Int): Boolean {
-        val sensor = manager.getDefaultSensor(type) ?: return false
-        return manager.registerListener(this, sensor, rate)
+    private fun registerDefault(type: Int, rate: Int): Boolean =
+        safeRegister(
+            safeGetDefaultSensor(type),
+            rate,
+        )
+
+    private fun safeRegister(
+        sensor: Sensor?,
+        rate: Int,
+    ): Boolean {
+        sensor ?: return false
+        return try {
+            manager.registerListener(this, sensor, rate)
+        } catch (_: RuntimeException) {
+            false
+        }
     }
+
+    private fun safeGetDefaultSensor(type: Int): Sensor? =
+        try {
+            manager.getDefaultSensor(type)
+        } catch (_: RuntimeException) {
+            null
+        }
+
+    private fun safeAllSensors(): List<Sensor> =
+        try {
+            manager.getSensorList(Sensor.TYPE_ALL)
+        } catch (_: RuntimeException) {
+            emptyList()
+        }
 
     private fun valuesAreFinite(
         values: FloatArray,

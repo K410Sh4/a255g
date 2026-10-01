@@ -196,16 +196,22 @@ fun A25LabApp(viewModel: AppViewModel) {
                     Screen.VibrationLab -> VibrationLabScreen(
                         modifier = Modifier.padding(padding),
                         state = viewModel.vibrationLab,
+                        onStart = viewModel::startVibrationLab,
+                        onStop = viewModel::stopExperimentalLab,
                     )
 
                     Screen.StabilizationLab -> StabilizationLabScreen(
                         modifier = Modifier.padding(padding),
                         state = viewModel.stabilizationLab,
+                        onStart = viewModel::startStabilizationLab,
+                        onStop = viewModel::stopExperimentalLab,
                     )
 
                     Screen.MagneticMapper -> MagneticMapperScreen(
                         modifier = Modifier.padding(padding),
                         state = viewModel.magneticMapper,
+                        onStart = viewModel::startMagneticMapper,
+                        onStop = viewModel::stopExperimentalLab,
                         onCapture = viewModel::captureMagneticCell,
                         onReset = viewModel::resetMagneticGrid,
                     )

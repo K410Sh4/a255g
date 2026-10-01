@@ -14,6 +14,7 @@ data class SensorStreamMetrics(
     val rmsMagnitude: Float = 0f,
     val peakMagnitude: Float = 0f,
     val lastValues: List<Float> = emptyList(),
+    val registrationError: String? = null,
 )
 
 data class VibrationLabState(
