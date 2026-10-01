@@ -21,8 +21,8 @@ class GenesisPdfImporter(
     private val context: Context,
 ) {
     fun import(uri: Uri): GenesisPdfPayload {
-        require(Build.VERSION.SDK_INT >= 35) {
-            "Extração nativa de texto PDF requer Android 15/API 35 ou superior."
+        if (Build.VERSION.SDK_INT < 35) {
+            error("Extração nativa de texto PDF requer Android 15/API 35 ou superior.")
         }
         return importApi35(uri)
     }
@@ -87,7 +87,7 @@ class GenesisPdfImporter(
         }
 
         val fingerprint = digest.digest().joinToString("") {
-            "%02x".format(it)
+            "%02x".format(it.toInt() and 0xff)
         }
         val documentId = "pdf-" + fingerprint.take(20)
 
