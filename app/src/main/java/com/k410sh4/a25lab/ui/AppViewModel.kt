@@ -477,6 +477,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         sensorQualification = sensorQualification.copy(running = false)
     }
 
+    fun stopExperimentalLab() {
+        experimentalSensorLab.stop()
+        vibrationLab = vibrationLab.copy(running = false)
+        stabilizationLab = stabilizationLab.copy(running = false)
+        magneticMapper = magneticMapper.copy(running = false)
+    }
+
     fun startGnss() {
         gnssRequested = true
         if (inForeground && screen == Screen.Gnss) startGnssInternal()
@@ -643,9 +650,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             Screen.Superpowers,
             Screen.Environment,
             -> startSuperpowers()
-            Screen.VibrationLab -> startVibrationLab()
-            Screen.StabilizationLab -> startStabilizationLab()
-            Screen.MagneticMapper -> startMagneticMapper()
             else -> Unit
         }
     }
