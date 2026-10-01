@@ -303,6 +303,10 @@ fun A25LabApp(viewModel: AppViewModel) {
                         error = viewModel.computeError,
                         onRun = viewModel::runCpuBaseline,
                     )
+
+                    Screen.Genesis -> GenesisScreen(
+                        modifier = Modifier.padding(padding),
+                    )
                 }
             }
         }
@@ -371,6 +375,7 @@ private fun parentScreen(screen: Screen): Screen = when (screen) {
     Screen.SensorQualification,
     Screen.Cameras,
     Screen.Compute,
+    Screen.Genesis,
     -> Screen.Lab
 
     Screen.Dashboard,
