@@ -31,6 +31,8 @@ import java.util.Locale
 fun VibrationLabScreen(
     modifier: Modifier,
     state: VibrationLabState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -41,6 +43,13 @@ fun VibrationLabScreen(
                 eyebrow = "EXPERIMENTAL",
                 title = "Vibration Lab",
                 subtitle = "Transforma o A25 em um analisador de vibração usando aceleração, giroscópio e AOIS quando disponível.",
+            )
+        }
+        item {
+            ExperimentalControls(
+                running = state.running,
+                onStart = onStart,
+                onStop = onStop,
             )
         }
         item {
@@ -109,6 +118,8 @@ fun VibrationLabScreen(
 fun StabilizationLabScreen(
     modifier: Modifier,
     state: StabilizationLabState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -119,6 +130,13 @@ fun StabilizationLabScreen(
                 eyebrow = "SAMSUNG SENSOR LAB",
                 title = "Stabilization Analyzer",
                 subtitle = "Mede o que cada stream realmente entrega. Hz observado e jitter vêm dos timestamps recebidos, não do minDelay declarado.",
+            )
+        }
+        item {
+            ExperimentalControls(
+                running = state.running,
+                onStart = onStart,
+                onStop = onStop,
             )
         }
         state.lastError?.let { message ->
@@ -158,6 +176,8 @@ fun StabilizationLabScreen(
 fun MagneticMapperScreen(
     modifier: Modifier,
     state: MagneticMapperState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
     onCapture: () -> Unit,
     onReset: () -> Unit,
 ) {
@@ -170,6 +190,13 @@ fun MagneticMapperScreen(
                 eyebrow = "FIELD MAPPER",
                 title = "Magnetic Mapper",
                 subtitle = "Faça uma varredura 5×5. Mantenha orientação e distância consistentes e capture um ponto por posição.",
+            )
+        }
+        item {
+            ExperimentalControls(
+                running = state.running,
+                onStart = onStart,
+                onStop = onStop,
             )
         }
         item {
@@ -324,6 +351,33 @@ fun SensorQualificationScreen(
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun ExperimentalControls(
+    running: Boolean,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Button(
+            onClick = onStart,
+            enabled = !running,
+            modifier = Modifier.weight(1f),
+        ) {
+            Text("Iniciar")
+        }
+        OutlinedButton(
+            onClick = onStop,
+            enabled = running,
+            modifier = Modifier.weight(1f),
+        ) {
+            Text("Parar")
+        }
     }
 }
 
