@@ -193,6 +193,31 @@ fun A25LabApp(viewModel: AppViewModel) {
                         sensors = viewModel.superpowers,
                     )
 
+                    Screen.VibrationLab -> VibrationLabScreen(
+                        modifier = Modifier.padding(padding),
+                        state = viewModel.vibrationLab,
+                    )
+
+                    Screen.StabilizationLab -> StabilizationLabScreen(
+                        modifier = Modifier.padding(padding),
+                        state = viewModel.stabilizationLab,
+                    )
+
+                    Screen.MagneticMapper -> MagneticMapperScreen(
+                        modifier = Modifier.padding(padding),
+                        state = viewModel.magneticMapper,
+                        onCapture = viewModel::captureMagneticCell,
+                        onReset = viewModel::resetMagneticGrid,
+                    )
+
+                    Screen.SensorQualification -> SensorQualificationScreen(
+                        modifier = Modifier.padding(padding),
+                        sensors = viewModel.sensors,
+                        state = viewModel.sensorQualification,
+                        onSelect = viewModel::startSensorQualification,
+                        onStop = viewModel::stopSensorQualification,
+                    )
+
                     Screen.Sensors -> PremiumSensorsScreen(
                         modifier = Modifier.padding(padding),
                         sensors = viewModel.sensors,
@@ -324,6 +349,9 @@ private fun PremiumBottomBar(
 private fun parentScreen(screen: Screen): Screen = when (screen) {
     Screen.Superpowers,
     Screen.Environment,
+    Screen.VibrationLab,
+    Screen.StabilizationLab,
+    Screen.MagneticMapper,
     Screen.Audio,
     -> Screen.Perception
 
@@ -334,6 +362,7 @@ private fun parentScreen(screen: Screen): Screen = when (screen) {
     -> Screen.Connectivity
 
     Screen.Sensors,
+    Screen.SensorQualification,
     Screen.Cameras,
     Screen.Compute,
     -> Screen.Lab

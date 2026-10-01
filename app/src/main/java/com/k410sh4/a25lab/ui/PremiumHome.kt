@@ -249,6 +249,9 @@ fun PerceptionHubScreen(
         subtitle = "Visualizações e análises usando sensores de movimento, ambiente e microfone do A25.",
         cards = listOf(
             HubItem("◎", "Movimento & 3D", "Pose 3D, aceleração, rotação, AOIS e VDIS.", Screen.Superpowers),
+            HubItem("∿", "Vibration Lab", "Analise vibrações com aceleração, gyro e AOIS em conjunto.", Screen.VibrationLab),
+            HubItem("⌁", "Stabilization Analyzer", "Compare Hz real, jitter e intensidade do gyro, AOIS e VDIS.", Screen.StabilizationLab),
+            HubItem("▦", "Magnetic Mapper", "Monte um mapa 5×5 de intensidade magnética com orientação compensada.", Screen.MagneticMapper),
             HubItem("◇", "Ambiente", "Campo magnético 3D, luz e canal vendor light_cct.", Screen.Environment),
             HubItem("≈", "Áudio", "RMS, frequência dominante e FFT local.", Screen.Audio),
         ),
@@ -288,6 +291,7 @@ fun LabHubScreen(
         subtitle = "Ferramentas técnicas para investigar o hardware exposto.",
         cards = listOf(
             HubItem("∿", "Sensores", "Inventário de sensores e leitura ao vivo.", Screen.Sensors),
+            HubItem("⌬", "Sensor Qualification", "Teste sensores Samsung isoladamente: Hz real, jitter, payload, RMS e pico.", Screen.SensorQualification),
             HubItem("▦", "Camera2", "Hardware level, OIS, RAW e controles.", Screen.Cameras),
             HubItem("Σ", "Compute / IA", "Baseline CPU e preparação para backends de ML.", Screen.Compute),
         ),
