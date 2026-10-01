@@ -755,5 +755,6 @@ enum class Screen(val title: String) {
     Cameras("Camera2"),
     Nfc("NFC"),
     Network("Rede"),
-    Compute("Compute / IA"),\n    Genesis("GENESIS"),
+    Compute("Compute / IA"),
+    Genesis("GENESIS"),
 }
