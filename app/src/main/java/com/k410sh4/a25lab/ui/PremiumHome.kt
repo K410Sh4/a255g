@@ -134,6 +134,16 @@ fun PremiumDashboardScreen(
 
         item {
             CategoryCard(
+                icon = "G",
+                title = "GENESIS",
+                description = "IA local aprendente: PDFs, memória com fonte, hipóteses, feedback e autoestudo.",
+                accent = CategoryAccent.Tertiary,
+                onClick = { onNavigate(Screen.Genesis) },
+            )
+        }
+
+        item {
+            CategoryCard(
                 icon = "◈",
                 title = "Percepção",
                 description = "Movimento 3D, magnetismo, luz e áudio.",
@@ -293,6 +303,7 @@ fun LabHubScreen(
             HubItem("∿", "Sensores", "Inventário de sensores e leitura ao vivo.", Screen.Sensors),
             HubItem("⌬", "Sensor Qualification", "Teste sensores Samsung isoladamente: Hz real, jitter, payload, RMS e pico.", Screen.SensorQualification),
             HubItem("▦", "Camera2", "Hardware level, OIS, RAW e controles.", Screen.Cameras),
+            HubItem("G", "GENESIS", "Memória aprendente com PDFs, hipóteses, feedback humano e rollback.", Screen.Genesis),
             HubItem("Σ", "Compute / IA", "Baseline CPU e preparação para backends de ML.", Screen.Compute),
         ),
         onNavigate = onNavigate,

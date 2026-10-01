@@ -756,4 +756,5 @@ enum class Screen(val title: String) {
     Nfc("NFC"),
     Network("Rede"),
     Compute("Compute / IA"),
+    Genesis("GENESIS"),
 }
