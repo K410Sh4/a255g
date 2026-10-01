@@ -16,6 +16,7 @@ import com.k410sh4.a25lab.data.AudioAnalyzer
 import com.k410sh4.a25lab.data.BleRepository
 import com.k410sh4.a25lab.data.CameraProbe
 import com.k410sh4.a25lab.data.ComputeBenchmark
+import com.k410sh4.a25lab.data.ExperimentalSensorLab
 import com.k410sh4.a25lab.data.GnssRepository
 import com.k410sh4.a25lab.data.HardwareProbe
 import com.k410sh4.a25lab.data.NetworkProbe
@@ -26,11 +27,15 @@ import com.k410sh4.a25lab.model.BleState
 import com.k410sh4.a25lab.model.CameraInfo
 import com.k410sh4.a25lab.model.DeviceSnapshot
 import com.k410sh4.a25lab.model.GnssState
+import com.k410sh4.a25lab.model.MagneticMapperState
 import com.k410sh4.a25lab.model.MotionSample
 import com.k410sh4.a25lab.model.NetworkState
 import com.k410sh4.a25lab.model.NfcState
 import com.k410sh4.a25lab.model.SensorInfo
+import com.k410sh4.a25lab.model.SensorQualificationState
+import com.k410sh4.a25lab.model.StabilizationLabState
 import com.k410sh4.a25lab.model.SuperpowerSensorState
+import com.k410sh4.a25lab.model.VibrationLabState
 import com.k410sh4.a25lab.model.SystemFeatureInfo
 import com.k410sh4.a25lab.util.ReportFormatter
 import java.io.File
@@ -54,6 +59,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val audioAnalyzer = AudioAnalyzer(application.applicationContext)
     private val networkProbe = NetworkProbe(application.applicationContext)
     private val computeBenchmark = ComputeBenchmark()
+    private val experimentalSensorLab = ExperimentalSensorLab(
+        application.applicationContext,
+    )
 
     private val clipboard = application.getSystemService(ClipboardManager::class.java)
     private val snapshotFile = File(
@@ -84,6 +92,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     var motion by mutableStateOf(MotionSample())
         private set
     var superpowers by mutableStateOf(SuperpowerSensorState())
+        private set
+    var vibrationLab by mutableStateOf(VibrationLabState())
+        private set
+    var stabilizationLab by mutableStateOf(StabilizationLabState())
+        private set
+    var magneticMapper by mutableStateOf(MagneticMapperState())
+        private set
+    var sensorQualification by mutableStateOf(SensorQualificationState())
         private set
     var gnss by mutableStateOf(GnssState())
         private set
@@ -189,6 +205,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         audio = AudioState()
         motion = MotionSample()
         superpowers = SuperpowerSensorState()
+        vibrationLab = vibrationLab.copy(running = false)
+        stabilizationLab = stabilizationLab.copy(running = false)
+        magneticMapper = magneticMapper.copy(running = false)
+        sensorQualification = sensorQualification.copy(running = false)
         nfc = NfcState(
             available = nfc.available,
             enabled = nfc.enabled,
@@ -391,6 +411,72 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun startVibrationLab() {
+        if (!inForeground || screen != Screen.VibrationLab) return
+        vibrationLab = VibrationLabState()
+        experimentalSensorLab.startVibration { state ->
+            post {
+                if (screen == Screen.VibrationLab) vibrationLab = state
+            }
+        }
+    }
+
+    fun startStabilizationLab() {
+        if (!inForeground || screen != Screen.StabilizationLab) return
+        stabilizationLab = StabilizationLabState()
+        experimentalSensorLab.startStabilization { state ->
+            post {
+                if (screen == Screen.StabilizationLab) stabilizationLab = state
+            }
+        }
+    }
+
+    fun startMagneticMapper() {
+        if (!inForeground || screen != Screen.MagneticMapper) return
+        val cells = magneticMapper.cellsUt
+        experimentalSensorLab.startMagneticMapper(cells) { state ->
+            post {
+                if (screen == Screen.MagneticMapper) magneticMapper = state
+            }
+        }
+    }
+
+    fun captureMagneticCell() {
+        if (screen == Screen.MagneticMapper) {
+            experimentalSensorLab.captureMagneticCell()
+        }
+    }
+
+    fun resetMagneticGrid() {
+        if (screen == Screen.MagneticMapper) {
+            experimentalSensorLab.resetMagneticGrid()
+        }
+    }
+
+    fun startSensorQualification(sensor: SensorInfo) {
+        if (!inForeground || screen != Screen.SensorQualification) return
+        sensorQualification = SensorQualificationState(
+            sensorType = sensor.type,
+            sensorName = sensor.name,
+            stringType = sensor.stringType,
+        )
+        experimentalSensorLab.startQualification(
+            type = sensor.type,
+            name = sensor.name,
+        ) { state ->
+            post {
+                if (screen == Screen.SensorQualification) {
+                    sensorQualification = state
+                }
+            }
+        }
+    }
+
+    fun stopSensorQualification() {
+        experimentalSensorLab.stop()
+        sensorQualification = sensorQualification.copy(running = false)
+    }
+
     fun startGnss() {
         gnssRequested = true
         if (inForeground && screen == Screen.Gnss) startGnssInternal()
@@ -542,6 +628,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         nfcReadGeneration.incrementAndGet()
         stopLiveModules(clearUserRequests = true)
         audioAnalyzer.close()
+        experimentalSensorLab.close()
         cancelCpuBaseline()
         ioExecutor.shutdownNow()
         nfcExecutor.shutdownNow()
@@ -556,6 +643,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             Screen.Superpowers,
             Screen.Environment,
             -> startSuperpowers()
+            Screen.VibrationLab -> startVibrationLab()
+            Screen.StabilizationLab -> startStabilizationLab()
+            Screen.MagneticMapper -> startMagneticMapper()
             else -> Unit
         }
     }
@@ -580,6 +670,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun stopLiveModules(clearUserRequests: Boolean) {
         sensorsRepository.stopMotion()
+        experimentalSensorLab.stop()
         gnssRepository.stop()
         bleRepository.stop()
         audioAnalyzer.stop()
@@ -649,6 +740,10 @@ enum class Screen(val title: String) {
     Lab("Laboratório"),
     Superpowers("Movimento & 3D"),
     Environment("Ambiente"),
+    VibrationLab("Vibration Lab"),
+    StabilizationLab("Stabilization Analyzer"),
+    MagneticMapper("Magnetic Mapper"),
+    SensorQualification("Sensor Qualification"),
     Sensors("Sensores"),
     Gnss("GNSS"),
     Bluetooth("Bluetooth LE"),
