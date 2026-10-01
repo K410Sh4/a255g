@@ -5,6 +5,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.TriggerEvent
+import android.hardware.TriggerEventListener
 import android.os.Handler
 import android.os.HandlerThread
 import com.k410sh4.a25lab.model.MagneticMapperState
@@ -23,6 +25,8 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         private const val VDIS_STRING_TYPE = "com.samsung.sensor.vdis_gyro"
         private const val PUBLISH_INTERVAL_NS = 100_000_000L
         private const val VIBRATION_WINDOW = 256
+        private const val FALLBACK_PERIOD_US = 20_000
+        private const val MIN_EXPLICIT_PERIOD_US = 1_000
     }
 
     private enum class Mode {
@@ -32,6 +36,11 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         MagneticMapper,
         Qualification,
     }
+
+    private data class RegistrationResult(
+        val registered: Boolean,
+        val error: String? = null,
+    )
 
     private val manager = context.getSystemService(SensorManager::class.java)
     private val thread = HandlerThread("A25ExperimentalSensors").apply { start() }
@@ -52,6 +61,7 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
     private var vibrationAoisStats = StreamStats(null)
     private val vibrationSamples = ArrayDeque<Float>()
     private var lastVibrationPublishNs = 0L
+    private var vibrationError: String? = null
 
     private var stabilizationGyro: Sensor? = null
     private var stabilizationAois: Sensor? = null
@@ -60,19 +70,50 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
     private var stabilizationAoisStats = StreamStats(null)
     private var stabilizationVdisStats = StreamStats(null)
     private var lastStabilizationPublishNs = 0L
+    private var stabilizationError: String? = null
 
     private var qualificationSensor: Sensor? = null
     private var qualificationStats = StreamStats(null)
     private var lastQualificationPublishNs = 0L
+    private var qualificationError: String? = null
 
     private var mapperMagnetic: Sensor? = null
     private var mapperRotation: Sensor? = null
     private val mapperRotationMatrix = FloatArray(9)
     private var mapperOrientationReady = false
+    private var lastMapperPublishNs = 0L
     private val mapperLock = Any()
 
     @Volatile
     private var mapperState = MagneticMapperState()
+
+    private val qualificationTriggerListener = object : TriggerEventListener() {
+        override fun onTrigger(event: TriggerEvent) {
+            if (mode != Mode.Qualification) return
+            val sensor = qualificationSensor ?: return
+            if (event.sensor != sensor) return
+
+            try {
+                val values = event.values
+                if (values.isNotEmpty() && values.all { it.isFinite() }) {
+                    qualificationStats.add(event.timestamp, values)
+                }
+                qualificationCallback?.invoke(
+                    SensorQualificationState(
+                        running = false,
+                        sensorType = sensor.type,
+                        sensorName = sensor.name,
+                        stringType = sensor.stringType.orEmpty(),
+                        metrics = qualificationStats.snapshot(),
+                        lastError = null,
+                    ),
+                )
+            } catch (error: RuntimeException) {
+                qualificationError = failure("Trigger", error)
+                publishQualificationFailure()
+            }
+        }
+    }
 
     fun startVibration(onState: (VibrationLabState) -> Unit) {
         stop()
@@ -80,25 +121,31 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         vibrationCallback = onState
         vibrationSamples.clear()
         lastVibrationPublishNs = 0L
+        vibrationError = null
 
-        val linear = manager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
-        val accelerometer = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val linear = safeGetDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        val accelerometer = safeGetDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         vibrationSensor = linear ?: accelerometer
         vibrationUsesLinear = linear != null
-        val gyro = manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        val aois = findByStringType(AOIS_STRING_TYPE)
+        val gyro = safeGetDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        val aois = safeFindByStringType(AOIS_STRING_TYPE)
 
         vibrationAccelerationStats = StreamStats(vibrationSensor)
         vibrationGyroStats = StreamStats(gyro)
         vibrationAoisStats = StreamStats(aois)
 
-        val accelRegistered = registerFast(vibrationSensor)
-        val gyroRegistered = registerFast(gyro)
-        val aoisRegistered = registerFast(aois)
+        val accel = registerContinuous(vibrationSensor)
+        val gyroResult = registerContinuous(gyro)
+        val aoisResult = registerContinuous(aois)
 
-        vibrationAccelerationStats.registered = accelRegistered
-        vibrationGyroStats.registered = gyroRegistered
-        vibrationAoisStats.registered = aoisRegistered
+        vibrationAccelerationStats.applyRegistration(accel)
+        vibrationGyroStats.applyRegistration(gyroResult)
+        vibrationAoisStats.applyRegistration(aoisResult)
+        vibrationError = listOfNotNull(
+            accel.error,
+            gyroResult.error,
+            aoisResult.error,
+        ).firstOrNull()
 
         onState(vibrationSnapshot())
     }
@@ -108,17 +155,28 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         mode = Mode.Stabilization
         stabilizationCallback = onState
         lastStabilizationPublishNs = 0L
+        stabilizationError = null
 
-        stabilizationGyro = manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        stabilizationAois = findByStringType(AOIS_STRING_TYPE)
-        stabilizationVdis = findByStringType(VDIS_STRING_TYPE)
+        stabilizationGyro = safeGetDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        stabilizationAois = safeFindByStringType(AOIS_STRING_TYPE)
+        stabilizationVdis = safeFindByStringType(VDIS_STRING_TYPE)
+
         stabilizationGyroStats = StreamStats(stabilizationGyro)
         stabilizationAoisStats = StreamStats(stabilizationAois)
         stabilizationVdisStats = StreamStats(stabilizationVdis)
 
-        stabilizationGyroStats.registered = registerFast(stabilizationGyro)
-        stabilizationAoisStats.registered = registerFast(stabilizationAois)
-        stabilizationVdisStats.registered = registerFast(stabilizationVdis)
+        val gyroResult = registerContinuous(stabilizationGyro)
+        val aoisResult = registerContinuous(stabilizationAois)
+        val vdisResult = registerContinuous(stabilizationVdis)
+
+        stabilizationGyroStats.applyRegistration(gyroResult)
+        stabilizationAoisStats.applyRegistration(aoisResult)
+        stabilizationVdisStats.applyRegistration(vdisResult)
+        stabilizationError = listOfNotNull(
+            gyroResult.error,
+            aoisResult.error,
+            vdisResult.error,
+        ).firstOrNull()
 
         onState(stabilizationSnapshot())
     }
@@ -130,9 +188,10 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         stop()
         mode = Mode.MagneticMapper
         mapperCallback = onState
-        mapperMagnetic = manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-        mapperRotation = manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        mapperMagnetic = safeGetDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        mapperRotation = safeGetDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         mapperOrientationReady = false
+        lastMapperPublishNs = 0L
 
         val normalizedCells = List(25) { index -> initialCells.getOrNull(index) }
         mapperState = mapperStateForCells(
@@ -144,14 +203,17 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
             ),
         )
 
-        val magneticRegistered = registerFast(mapperMagnetic)
-        val rotationRegistered = registerFast(mapperRotation)
+        val magneticResult = registerContinuous(mapperMagnetic)
+        val rotationResult = registerContinuous(mapperRotation)
         mapperState = mapperState.copy(
-            running = magneticRegistered || rotationRegistered,
+            running = magneticResult.registered,
             lastError = when {
                 mapperMagnetic == null -> "Magnetômetro indisponível."
-                !magneticRegistered -> "Não foi possível registrar o magnetômetro."
-                mapperRotation == null -> "Rotation vector indisponível; intensidade ainda pode ser mapeada."
+                magneticResult.error != null -> magneticResult.error
+                !magneticResult.registered -> "Não foi possível registrar o magnetômetro."
+                mapperRotation == null ->
+                    "Rotation vector indisponível; intensidade ainda pode ser mapeada."
+                rotationResult.error != null -> rotationResult.error
                 else -> null
             },
         )
@@ -163,18 +225,20 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         synchronized(mapperLock) {
             val current = mapperState
             if (!current.magneticReady || current.nextIndex !in 0..24) return
+
             val cells = current.cellsUt.toMutableList()
             cells[current.nextIndex] = current.currentStrengthUt
             val next = cells.indexOfFirst { it == null }.let {
                 if (it < 0) 25 else it
             }
+
             mapperState = mapperStateForCells(
                 current.copy(
                     cellsUt = cells,
                     nextIndex = next,
                 ),
             )
-            mapperCallback?.invoke(mapperState)
+            safeMapperPublish()
         }
     }
 
@@ -188,7 +252,7 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 maxStrengthUt = null,
                 strongestIndex = null,
             )
-            mapperCallback?.invoke(mapperState)
+            safeMapperPublish()
         }
     }
 
@@ -201,22 +265,34 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         mode = Mode.Qualification
         qualificationCallback = onState
         lastQualificationPublishNs = 0L
+        qualificationError = null
 
-        qualificationSensor = manager.getSensorList(Sensor.TYPE_ALL)
+        qualificationSensor = safeAllSensors()
             .firstOrNull { it.type == type && it.name == name }
         qualificationStats = StreamStats(qualificationSensor)
-        qualificationStats.registered = registerFast(qualificationSensor)
+
+        val sensor = qualificationSensor
+        val result = when {
+            sensor == null -> RegistrationResult(false)
+            sensor.reportingMode == Sensor.REPORTING_MODE_ONE_SHOT ->
+                requestOneShot(sensor)
+            else -> registerContinuous(sensor)
+        }
+
+        qualificationStats.applyRegistration(result)
+        qualificationError = result.error
 
         onState(
             SensorQualificationState(
-                running = qualificationStats.registered,
+                running = result.registered,
                 sensorType = type,
-                sensorName = qualificationSensor?.name ?: name,
-                stringType = qualificationSensor?.stringType.orEmpty(),
+                sensorName = sensor?.name ?: name,
+                stringType = sensor?.stringType.orEmpty(),
                 metrics = qualificationStats.snapshot(),
                 lastError = when {
-                    qualificationSensor == null -> "Sensor não encontrado."
-                    !qualificationStats.registered -> "Falha ao registrar o sensor."
+                    sensor == null -> "Sensor não encontrado."
+                    result.error != null -> result.error
+                    !result.registered -> "Falha ao registrar o sensor."
                     else -> null
                 },
             ),
@@ -224,12 +300,27 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
     }
 
     fun stop() {
-        manager.unregisterListener(this)
+        runCatching {
+            manager.unregisterListener(this)
+        }
+
+        qualificationSensor?.let { sensor ->
+            if (sensor.reportingMode == Sensor.REPORTING_MODE_ONE_SHOT) {
+                runCatching {
+                    manager.cancelTriggerSensor(
+                        qualificationTriggerListener,
+                        sensor,
+                    )
+                }
+            }
+        }
+
         mode = Mode.Idle
         vibrationCallback = null
         stabilizationCallback = null
         mapperCallback = null
         qualificationCallback = null
+        qualificationSensor = null
     }
 
     fun close() {
@@ -238,12 +329,16 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        when (mode) {
-            Mode.Vibration -> updateVibration(event)
-            Mode.Stabilization -> updateStabilization(event)
-            Mode.MagneticMapper -> updateMagneticMapper(event)
-            Mode.Qualification -> updateQualification(event)
-            Mode.Idle -> Unit
+        try {
+            when (mode) {
+                Mode.Vibration -> updateVibration(event)
+                Mode.Stabilization -> updateStabilization(event)
+                Mode.MagneticMapper -> updateMagneticMapper(event)
+                Mode.Qualification -> updateQualification(event)
+                Mode.Idle -> Unit
+            }
+        } catch (error: RuntimeException) {
+            handleCallbackFailure(error)
         }
     }
 
@@ -258,9 +353,16 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 val magnitude = if (vibrationUsesLinear) {
                     SensorLabMath.magnitude3(values)
                 } else {
-                    abs(SensorLabMath.magnitude3(values) - SensorManager.GRAVITY_EARTH)
+                    abs(
+                        SensorLabMath.magnitude3(values) -
+                            SensorManager.GRAVITY_EARTH,
+                    )
                 }
-                vibrationAccelerationStats.add(event.timestamp, values, magnitude)
+                vibrationAccelerationStats.add(
+                    event.timestamp,
+                    values,
+                    magnitude,
+                )
                 vibrationSamples.addLast(magnitude)
                 while (vibrationSamples.size > VIBRATION_WINDOW) {
                     vibrationSamples.removeFirst()
@@ -285,9 +387,12 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         if (values.isEmpty() || values.any { !it.isFinite() }) return
 
         when (event.sensor) {
-            stabilizationGyro -> stabilizationGyroStats.add(event.timestamp, values)
-            stabilizationAois -> stabilizationAoisStats.add(event.timestamp, values)
-            stabilizationVdis -> stabilizationVdisStats.add(event.timestamp, values)
+            stabilizationGyro ->
+                stabilizationGyroStats.add(event.timestamp, values)
+            stabilizationAois ->
+                stabilizationAoisStats.add(event.timestamp, values)
+            stabilizationVdis ->
+                stabilizationVdisStats.add(event.timestamp, values)
         }
 
         if (lastStabilizationPublishNs == 0L ||
@@ -304,7 +409,10 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
 
         synchronized(mapperLock) {
             if (event.sensor == mapperRotation && values.size >= 3) {
-                SensorManager.getRotationMatrixFromVector(mapperRotationMatrix, values)
+                SensorManager.getRotationMatrixFromVector(
+                    mapperRotationMatrix,
+                    values,
+                )
                 mapperOrientationReady = true
                 mapperState = mapperState.copy(orientationReady = true)
             } else if (event.sensor == mapperMagnetic && values.size >= 3) {
@@ -312,17 +420,22 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 var worldX = 0f
                 var worldY = 0f
                 var worldZ = 0f
+
                 if (mapperOrientationReady) {
-                    worldX = mapperRotationMatrix[0] * values[0] +
+                    worldX =
+                        mapperRotationMatrix[0] * values[0] +
                         mapperRotationMatrix[1] * values[1] +
                         mapperRotationMatrix[2] * values[2]
-                    worldY = mapperRotationMatrix[3] * values[0] +
+                    worldY =
+                        mapperRotationMatrix[3] * values[0] +
                         mapperRotationMatrix[4] * values[1] +
                         mapperRotationMatrix[5] * values[2]
-                    worldZ = mapperRotationMatrix[6] * values[0] +
+                    worldZ =
+                        mapperRotationMatrix[6] * values[0] +
                         mapperRotationMatrix[7] * values[1] +
                         mapperRotationMatrix[8] * values[2]
                 }
+
                 mapperState = mapperState.copy(
                     magneticReady = true,
                     currentStrengthUt = strength,
@@ -331,12 +444,19 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                     worldZUt = worldZ,
                 )
             }
-            mapperCallback?.invoke(mapperState)
+
+            if (lastMapperPublishNs == 0L ||
+                event.timestamp - lastMapperPublishNs >= PUBLISH_INTERVAL_NS
+            ) {
+                lastMapperPublishNs = event.timestamp
+                safeMapperPublish()
+            }
         }
     }
 
     private fun updateQualification(event: SensorEvent) {
         if (event.sensor != qualificationSensor) return
+
         val values = event.values
         if (values.isEmpty() || values.any { !it.isFinite() }) return
 
@@ -352,6 +472,7 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                     sensorName = event.sensor.name,
                     stringType = event.sensor.stringType.orEmpty(),
                     metrics = qualificationStats.snapshot(),
+                    lastError = qualificationError,
                 ),
             )
         }
@@ -363,6 +484,7 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
             vibrationSamples.toList(),
             accel.observedHz,
         )
+
         return VibrationLabState(
             running = mode == Mode.Vibration,
             sourceLabel = if (vibrationUsesLinear) {
@@ -375,7 +497,11 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
             aois = vibrationAoisStats.snapshot(),
             dominantFrequencyHz = spectral.frequencyHz,
             dominantConfidence = spectral.confidence,
-            lastError = if (!accel.available) "Sensor de aceleração indisponível." else null,
+            lastError = vibrationError ?: if (!accel.available) {
+                "Sensor de aceleração indisponível."
+            } else {
+                null
+            },
         )
     }
 
@@ -385,17 +511,20 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
             physicalGyro = stabilizationGyroStats.snapshot(),
             aois = stabilizationAoisStats.snapshot(),
             vdis = stabilizationVdisStats.snapshot(),
-            lastError = if (stabilizationGyro == null) {
+            lastError = stabilizationError ?: if (stabilizationGyro == null) {
                 "Giroscópio físico indisponível."
             } else {
                 null
             },
         )
 
-    private fun mapperStateForCells(state: MagneticMapperState): MagneticMapperState {
+    private fun mapperStateForCells(
+        state: MagneticMapperState,
+    ): MagneticMapperState {
         val populated = state.cellsUt.mapIndexedNotNull { index, value ->
             value?.let { index to it }
         }
+
         if (populated.isEmpty()) {
             return state.copy(
                 minStrengthUt = null,
@@ -403,6 +532,7 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 strongestIndex = null,
             )
         }
+
         val strongest = populated.maxBy { it.second }
         return state.copy(
             minStrengthUt = populated.minOf { it.second },
@@ -411,22 +541,147 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         )
     }
 
-    private fun registerFast(sensor: Sensor?): Boolean {
-        sensor ?: return false
-        return manager.registerListener(
-            this,
-            sensor,
-            SensorManager.SENSOR_DELAY_FASTEST,
-            handler,
-        )
+    private fun registerContinuous(sensor: Sensor?): RegistrationResult {
+        sensor ?: return RegistrationResult(false)
+
+        if (sensor.reportingMode == Sensor.REPORTING_MODE_ONE_SHOT) {
+            return RegistrationResult(
+                registered = false,
+                error = sensor.name +
+                    ": sensor one-shot requer modo de trigger.",
+            )
+        }
+
+        val periodUs = sensor.minDelay
+            .takeIf { it > 0 }
+            ?.coerceAtLeast(MIN_EXPLICIT_PERIOD_US)
+            ?: FALLBACK_PERIOD_US
+
+        return try {
+            val registered = manager.registerListener(
+                this,
+                sensor,
+                periodUs,
+                handler,
+            )
+            RegistrationResult(
+                registered = registered,
+                error = if (registered) {
+                    null
+                } else {
+                    sensor.name + ": registro recusado pelo SensorManager."
+                },
+            )
+        } catch (error: RuntimeException) {
+            RegistrationResult(
+                registered = false,
+                error = failure(sensor.name, error),
+            )
+        }
     }
 
-    private fun findByStringType(stringType: String): Sensor? =
-        manager.getSensorList(Sensor.TYPE_ALL)
-            .firstOrNull { it.stringType == stringType }
+    private fun requestOneShot(sensor: Sensor): RegistrationResult =
+        try {
+            val registered = manager.requestTriggerSensor(
+                qualificationTriggerListener,
+                sensor,
+            )
+            RegistrationResult(
+                registered = registered,
+                error = if (registered) {
+                    null
+                } else {
+                    sensor.name + ": trigger recusado pelo SensorManager."
+                },
+            )
+        } catch (error: RuntimeException) {
+            RegistrationResult(
+                registered = false,
+                error = failure(sensor.name, error),
+            )
+        }
+
+    private fun safeGetDefaultSensor(type: Int): Sensor? =
+        try {
+            manager.getDefaultSensor(type)
+        } catch (_: RuntimeException) {
+            null
+        }
+
+    private fun safeFindByStringType(stringType: String): Sensor? =
+        safeAllSensors().firstOrNull { it.stringType == stringType }
+
+    private fun safeAllSensors(): List<Sensor> =
+        try {
+            manager.getSensorList(Sensor.TYPE_ALL)
+        } catch (_: RuntimeException) {
+            emptyList()
+        }
+
+    private fun safeMapperPublish() {
+        try {
+            mapperCallback?.invoke(mapperState)
+        } catch (error: RuntimeException) {
+            mapperState = mapperState.copy(
+                lastError = failure("Publicação do mapa", error),
+            )
+        }
+    }
+
+    private fun handleCallbackFailure(error: RuntimeException) {
+        val message = failure("Callback do sensor", error)
+
+        when (mode) {
+            Mode.Vibration -> {
+                vibrationError = message
+                runCatching {
+                    vibrationCallback?.invoke(vibrationSnapshot())
+                }
+            }
+            Mode.Stabilization -> {
+                stabilizationError = message
+                runCatching {
+                    stabilizationCallback?.invoke(stabilizationSnapshot())
+                }
+            }
+            Mode.MagneticMapper -> {
+                synchronized(mapperLock) {
+                    mapperState = mapperState.copy(lastError = message)
+                    safeMapperPublish()
+                }
+            }
+            Mode.Qualification -> {
+                qualificationError = message
+                publishQualificationFailure()
+            }
+            Mode.Idle -> Unit
+        }
+    }
+
+    private fun publishQualificationFailure() {
+        val sensor = qualificationSensor
+        runCatching {
+            qualificationCallback?.invoke(
+                SensorQualificationState(
+                    running = false,
+                    sensorType = sensor?.type,
+                    sensorName = sensor?.name ?: "Sensor experimental",
+                    stringType = sensor?.stringType.orEmpty(),
+                    metrics = qualificationStats.snapshot(),
+                    lastError = qualificationError,
+                ),
+            )
+        }
+    }
+
+    private fun failure(
+        operation: String,
+        error: RuntimeException,
+    ): String = operation + ": " + error::class.java.simpleName
 
     private class StreamStats(val sensor: Sensor?) {
         var registered: Boolean = false
+        private var registrationError: String? = null
         private var eventCount = 0L
         private var firstTimestampNs = 0L
         private var previousTimestampNs = 0L
@@ -435,7 +690,13 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
         private var deltaM2Ns = 0.0
         private var sumSquaredMagnitude = 0.0
         private var peakMagnitude = 0.0
-        private var lastValues: List<Float> = emptyList()
+        private val lastValues = FloatArray(8)
+        private var lastValueCount = 0
+
+        fun applyRegistration(result: RegistrationResult) {
+            registered = result.registered
+            registrationError = result.error
+        }
 
         fun add(
             timestampNs: Long,
@@ -458,9 +719,16 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
             }
             previousTimestampNs = timestampNs
 
-            sumSquaredMagnitude += magnitude * magnitude
+            val squared = magnitude * magnitude
+            if (squared.isFinite()) {
+                sumSquaredMagnitude += squared
+            }
             peakMagnitude = maxOf(peakMagnitude, magnitude)
-            lastValues = values.copyOf().take(8)
+
+            lastValueCount = minOf(values.size, lastValues.size)
+            for (index in 0 until lastValueCount) {
+                lastValues[index] = values[index]
+            }
         }
 
         fun snapshot(): SensorStreamMetrics {
@@ -470,16 +738,21 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 0L
             }
             val hz = if (eventCount > 1L && elapsedNs > 0L) {
-                (eventCount - 1L) * 1_000_000_000.0 / elapsedNs.toDouble()
+                (eventCount - 1L) *
+                    1_000_000_000.0 /
+                    elapsedNs.toDouble()
             } else {
                 0.0
             }
             val jitterNs = if (deltaCount > 1L) {
-                sqrt(deltaM2Ns / (deltaCount - 1L).toDouble())
+                sqrt(
+                    deltaM2Ns /
+                        (deltaCount - 1L).toDouble(),
+                )
             } else {
                 0.0
             }
-            val rms = if (eventCount > 0L) {
+            val rms = if (eventCount > 0L && sumSquaredMagnitude.isFinite()) {
                 sqrt(sumSquaredMagnitude / eventCount.toDouble())
             } else {
                 0.0
@@ -495,10 +768,13 @@ class ExperimentalSensorLab(context: Context) : SensorEventListener {
                 eventCount = eventCount,
                 observedHz = hz.toFloat(),
                 jitterMs = (jitterNs / 1_000_000.0).toFloat(),
-                vectorSize = lastValues.size,
+                vectorSize = lastValueCount,
                 rmsMagnitude = rms.toFloat(),
                 peakMagnitude = peakMagnitude.toFloat(),
-                lastValues = lastValues,
+                lastValues = List(lastValueCount) { index ->
+                    lastValues[index]
+                },
+                registrationError = registrationError,
             )
         }
     }

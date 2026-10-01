@@ -392,6 +392,7 @@ private fun StreamMetricsCard(
                 fontWeight = FontWeight.Bold,
             )
             MetricRow("Sensor", metrics.name)
+            metrics.registrationError?.let { ErrorText(it) }
             MetricRow(
                 "Status",
                 when {
